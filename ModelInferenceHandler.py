@@ -51,7 +51,7 @@ class ModelInferenceHandler:
             self.modelc.load_state_dict(torch.load('weights/resnet101.pt', map_location=self.device)['model']).to(self.device).eval()
 
         # Set Dataloader
-        vid_path, vid_writer = None, None
+        self.vid_path, self.vid_writer = None, None
         if self.webcam:
             self.view_img = check_imshow()
             cudnn.benchmark = True  # set True to speed up constant image size inference
@@ -61,16 +61,17 @@ class ModelInferenceHandler:
 
         # Get names and colors
         self.names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
-        colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.names]
+        self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.names]
 
         # Run inference
         if self.device.type != 'cpu':
             self.model(torch.zeros(1, 3, imgsz, imgsz).to(self.device).type_as(next(self.model.parameters())))  # run once
-        old_img_w = old_img_h = imgsz
-        old_img_b = 1
+        self.old_img_w = self.old_img_h = imgsz
+        self.old_img_b = 1
 
-    def Predict(self):
+        """
         for path, img, im0s, vid_cap in self.dataset:
+            self.dataset[x][2]
             img = torch.from_numpy(img).to(self.device)
             img = img.half() if self.half else img.float()  # uint8 to fp16/32
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -78,36 +79,47 @@ class ModelInferenceHandler:
                 img = img.unsqueeze(0)
 
             # Warmup
-            if self.device.type != 'cpu' and (old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
-                old_img_b = img.shape[0]
-                old_img_h = img.shape[2]
-                old_img_w = img.shape[3]
+            if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
+                self.old_img_b = img.shape[0]
+                self.old_img_h = img.shape[2]
+                self.old_img_w = img.shape[3]
+                for i in range(3):
+                    self.model(img, augment=opt.augment)[0]
+        """
+
+    def Predict(self):
+        for path, img, im0s, vid_cap in self.dataset:
+            self.dataset[x][2]
+            img = torch.from_numpy(img).to(self.device)
+            img = img.half() if self.half else img.float()  # uint8 to fp16/32
+            img /= 255.0  # 0 - 255 to 0.0 - 1.0
+            if img.ndimension() == 3:
+                img = img.unsqueeze(0)
+
+            # Warmup
+            if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
+                self.old_img_b = img.shape[0]
+                self.old_img_h = img.shape[2]
+                self.old_img_w = img.shape[3]
                 for i in range(3):
                     self.model(img, augment=opt.augment)[0]
 
             # Inference
             t1 = time_synchronized()
+
             with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
-                # Muhtmelen model dosyasi yuklenir
                 pred = self.model(img, augment=opt.augment)[0]
             t2 = time_synchronized()
 
             # Apply NMS
-            # Resim uzerine model ile tahmin cikarilir
-            # Tahminlerle ilgili ayarlar (max sinif sayisi veya saptanan obje sayisi gibi) da bu fonksiyonun icindedir
-            # Tahminime gore direk siniflandirmak yerine farkli objeleri saptama kismini hallediyor sadece
             pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
             t3 = time_synchronized()
 
             # Apply Classifier
-            # Cikarilan tahminler (muhtemelen obje oldugu dusunulenler goruntuler) uzerine siniflandirmalar yapilir
             if self.classify:
                 pred = apply_classifier(pred, self.modelc, img, im0s)
 
             # Process detections
-
-            # Bu dongude ise o goruntudeki cikarilan tum tahminler icin siniflandirmalar ve bounding box'lar
-            # resim uzerine cizilir ve kaydedilir
             for i, det in enumerate(pred):  # detections per image
                 if self.webcam:  # batch_size >= 1
                     p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
@@ -153,10 +165,10 @@ class ModelInferenceHandler:
                         cv2.imwrite(save_path, im0)
                         print(f" The image with the result is saved in: {save_path}")
                     else:  # 'video' or 'stream'
-                        if vid_path != save_path:  # new video
-                            vid_path = save_path
-                            if isinstance(vid_writer, cv2.VideoWriter):
-                                vid_writer.release()  # release previous video writer
+                        if self.vid_path != save_path:  # new video
+                            self.vid_path = save_path
+                            if isinstance(self.vid_writer, cv2.VideoWriter):
+                                self.vid_writer.release()  # release previous video writer
                             if vid_cap:  # video
                                 fps = vid_cap.get(cv2.CAP_PROP_FPS)
                                 w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -164,8 +176,8 @@ class ModelInferenceHandler:
                             else:  # stream
                                 fps, w, h = 30, im0.shape[1], im0.shape[0]
                                 save_path += '.mp4'
-                            vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                        vid_writer.write(im0)
+                            self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                        self.vid_writer.write(im0)
 
     def Postprocess(self):
         pass
