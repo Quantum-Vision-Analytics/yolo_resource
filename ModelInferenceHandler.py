@@ -60,7 +60,7 @@ class ModelInferenceHandler:
             self.dataset = LoadImages(source, img_size=imgsz, stride=stride)
 
         # Get names and colors
-        self.names = self.model.module.self.names if hasattr(self.model, 'module') else self.model.self.names
+        self.names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
         colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.names]
 
         # Run inference
@@ -204,9 +204,11 @@ if __name__ == '__main__':
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['yolov7.pt']:
-                mih.Preprocess
-                mih.Postprocess
+                mih.Preprocess()
+                mih.Predict()
+                mih.Postprocess()
                 strip_optimizer(opt.weights)
         else:
             mih.Preprocess()
             mih.Predict()
+            mih.Postprocess()
