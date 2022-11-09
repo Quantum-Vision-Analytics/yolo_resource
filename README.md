@@ -1,5 +1,10 @@
 # yolo_resource
 
 ## Yapılacaklar:
-Preprocess
+### Preprocessing:
+datayı al(resimler)  
+manipülasyon işlemleri  
+model yükleme  
+predict  
+
 
