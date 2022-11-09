@@ -89,7 +89,6 @@ class ModelInferenceHandler:
 
     def Predict(self):
         for path, img, im0s, vid_cap in self.dataset:
-            self.dataset[x][2]
             img = torch.from_numpy(img).to(self.device)
             img = img.half() if self.half else img.float()  # uint8 to fp16/32
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
