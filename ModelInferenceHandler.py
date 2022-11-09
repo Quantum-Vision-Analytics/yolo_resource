@@ -18,9 +18,9 @@ class ModelInferenceHandler:
     def Train(self):
         pass
 
-    def Preprocess(self,source,weights):
+    def Preprocess(self,save_img=False):
         source, weights, self.view_img, self.save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
-        save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
+        self.save_img = save_img; self.save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
         self.webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
             ('rtsp://', 'rtmp://', 'http://', 'https://'))
 
