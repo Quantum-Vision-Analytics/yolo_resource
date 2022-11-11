@@ -9,29 +9,32 @@ from numpy import random
 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
-from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
-    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
+from utils.general import check_img_size, check_imshow, non_max_suppression, apply_classifier, \
+    scale_coords, xyxy2xywh, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 class ModelInferenceHandler:
+    def SetOptions(self,options):
+        self.opt = options
+
     def Train(self):
         pass
 
     def Preprocess(self,save_img=False):
-        source, weights, self.view_img, self.save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
-        self.save_img = save_img; self.save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
+        source, weights, self.view_img, self.save_txt, imgsz, trace = self.opt.source, self.opt.weights, self.opt.view_img, self.opt.save_txt, self.opt.img_size, not self.opt.no_trace
+        self.save_img = save_img; self.save_img = not self.opt.nosave and not source.endswith('.txt')  # save inference images
         self.webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
             ('rtsp://', 'rtmp://', 'http://', 'https://'))
 
         # Directories
         # Get full system directory with relevant directory
-        self.save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # increment run
+        self.save_dir = Path(increment_path(Path(self.opt.project) / self.opt.name, exist_ok=self.opt.exist_ok))  # increment run
         (self.save_dir / 'labels' if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
         # Initialize
         set_logging()
-        self.device = select_device(opt.device)
+        self.device = select_device(self.opt.device)
         self.half = self.device.type != 'cpu'  # half precision only supported on CUDA
 
         # Load model
@@ -40,7 +43,7 @@ class ModelInferenceHandler:
         imgsz = check_img_size(imgsz, s=stride)  # check img_size
 
         if trace:
-            self.model = TracedModel(self.model, self.device, opt.img_size)
+            self.model = TracedModel(self.model, self.device, self.opt.img_size)
 
         if self.half:
             self.model.half()  # to FP16
@@ -69,24 +72,6 @@ class ModelInferenceHandler:
         self.old_img_w = self.old_img_h = imgsz
         self.old_img_b = 1
 
-        """
-        for path, img, im0s, vid_cap in self.dataset:
-            self.dataset[x][2]
-            img = torch.from_numpy(img).to(self.device)
-            img = img.half() if self.half else img.float()  # uint8 to fp16/32
-            img /= 255.0  # 0 - 255 to 0.0 - 1.0
-            if img.ndimension() == 3:
-                img = img.unsqueeze(0)
-
-            # Warmup
-            if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
-                self.old_img_b = img.shape[0]
-                self.old_img_h = img.shape[2]
-                self.old_img_w = img.shape[3]
-                for i in range(3):
-                    self.model(img, augment=opt.augment)[0]
-        """
-
     def Predict(self):
         for path, img, im0s, vid_cap in self.dataset:
             img = torch.from_numpy(img).to(self.device)
@@ -101,17 +86,17 @@ class ModelInferenceHandler:
                 self.old_img_h = img.shape[2]
                 self.old_img_w = img.shape[3]
                 for i in range(3):
-                    self.model(img, augment=opt.augment)[0]
+                    self.model(img, augment=self.opt.augment)[0]
 
             # Inference
             t1 = time_synchronized()
 
             with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
-                pred = self.model(img, augment=opt.augment)[0]
+                pred = self.model(img, augment=self.opt.augment)[0]
             t2 = time_synchronized()
 
             # Apply NMS
-            pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, classes=opt.classes, agnostic=opt.agnostic_nms)
+            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.opt.classes, agnostic=self.opt.agnostic_nms)
             t3 = time_synchronized()
 
             # Apply Classifier
@@ -132,7 +117,6 @@ class ModelInferenceHandler:
                 if len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
-
                     # Print results
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
@@ -142,7 +126,7 @@ class ModelInferenceHandler:
                     for *xyxy, conf, cls in reversed(det):
                         if self.save_txt:  # Write to file
                             xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                            line = (cls, *xywh, conf) if opt.save_conf else (cls, *xywh)  # label format
+                            line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
                             with open(txt_path + '.txt', 'a') as f:
                                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
@@ -186,8 +170,8 @@ class ModelInferenceHandler:
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
 
-
-if __name__ == '__main__':
+"""
+def Parsing():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
@@ -207,19 +191,20 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
-    opt = parser.parse_args()
-    print(opt)
+    self.opt = parser.parse_args()
+    print(self.opt)
     #check_requirements(exclude=('pycocotools', 'thop'))
 
     mih = ModelInferenceHandler()
     with torch.no_grad():
-        if opt.update:  # update all models (to fix SourceChangeWarning)
-            for opt.weights in ['yolov7.pt']:
+        if self.opt.update:  # update all models (to fix SourceChangeWarning)
+            for self.opt.weights in ['yolov7.pt']:
                 mih.Preprocess()
                 mih.Predict()
                 mih.Postprocess()
-                strip_optimizer(opt.weights)
+                strip_optimizer(self.opt.weights)
         else:
             mih.Preprocess()
             mih.Predict()
             mih.Postprocess()
+"""
