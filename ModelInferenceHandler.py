@@ -72,14 +72,23 @@ class ModelInferenceHandler:
         self.old_img_w = self.old_img_h = imgsz
         self.old_img_b = 1
 
-    def Predict(self):
-        for path, img, im0s, vid_cap in self.dataset:
+        for imgIndex, data in enumerate(self.dataset.data):
+            path, img, im0s, vid_cap = data
             img = torch.from_numpy(img).to(self.device)
             img = img.half() if self.half else img.float()  # uint8 to fp16/32
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
             if img.ndimension() == 3:
                 img = img.unsqueeze(0)
 
+            self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
+
+
+    def Predict(self):
+        self.preds = []
+        self.timelaps = []
+        for imgIndex, data in enumerate(self.dataset.data):
+            path, img, im0s, vid_cap = data
+            timelap = []
             # Warmup
             if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
                 self.old_img_b = img.shape[0]
@@ -89,21 +98,29 @@ class ModelInferenceHandler:
                     self.model(img, augment=self.opt.augment)[0]
 
             # Inference
-            t1 = time_synchronized()
+            timelap.append(time_synchronized())
 
             with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
                 pred = self.model(img, augment=self.opt.augment)[0]
-            t2 = time_synchronized()
+            timelap.append(time_synchronized())
 
             # Apply NMS
             pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.opt.classes, agnostic=self.opt.agnostic_nms)
-            t3 = time_synchronized()
+            timelap.append(time_synchronized())
+
+            self.timelaps.append(timelap)
 
             # Apply Classifier
             if self.classify:
                 pred = apply_classifier(pred, self.modelc, img, im0s)
+            self.preds.append(pred)
+        self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
-            # Process detections
+    def Postprocess(self):
+    # Process detections
+        for imgIndex, data in enumerate(self.dataset.data):
+            path, img, im0s, vid_cap = data
+            pred = self.preds[imgIndex]
             for i, det in enumerate(pred):  # detections per image
                 if self.webcam:  # batch_size >= 1
                     p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
@@ -135,7 +152,7 @@ class ModelInferenceHandler:
                             plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
 
                 # Print time (inference + NMS)
-                print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
+                print(f'{s}Done. ({(1E3 * (self.timelaps[imgIndex][1] - self.timelaps[imgIndex][0])):.1f}ms) Inference, ({(1E3 * (self.timelaps[imgIndex][2] - self.timelaps[imgIndex][1])):.1f}ms) NMS')
 
                 # Stream results
                 if self.view_img:
@@ -161,50 +178,8 @@ class ModelInferenceHandler:
                                 save_path += '.mp4'
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im0)
-
-    def Postprocess(self):
-        pass
         #if self.save_txt or self.save_img:
         #s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if self.save_txt else ''
         #print(f"Results saved to {save_dir}{s}")
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
-
-"""
-def Parsing():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
-    parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--view-img', action='store_true', help='display results')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
-    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 0 2 3')
-    parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default='runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
-    self.opt = parser.parse_args()
-    print(self.opt)
-    #check_requirements(exclude=('pycocotools', 'thop'))
-
-    mih = ModelInferenceHandler()
-    with torch.no_grad():
-        if self.opt.update:  # update all models (to fix SourceChangeWarning)
-            for self.opt.weights in ['yolov7.pt']:
-                mih.Preprocess()
-                mih.Predict()
-                mih.Postprocess()
-                strip_optimizer(self.opt.weights)
-        else:
-            mih.Preprocess()
-            mih.Predict()
-            mih.Postprocess()
-"""
