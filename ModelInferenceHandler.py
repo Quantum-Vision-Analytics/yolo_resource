@@ -14,7 +14,12 @@ from utils.general import check_img_size, check_imshow, non_max_suppression, app
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
+from FileGenerator import FileGenerator
+
 class ModelInferenceHandler:
+    def __init__(self):
+        self.fileGen = FileGenerator()
+
     def SetOptions(self,options):
         self.opt = options
 
@@ -121,6 +126,7 @@ class ModelInferenceHandler:
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             pred = self.preds[imgIndex]
+            detections = []
             for i, det in enumerate(pred):  # detections per image
                 if self.webcam:  # batch_size >= 1
                     p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
@@ -140,13 +146,12 @@ class ModelInferenceHandler:
                         s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                     # Write results
+                    self.fileGen.SetGenerator(txt_path, gn, self.opt.save_conf)
+                    #for *xyxy, conf, cls in reversed(det):
                     for *xyxy, conf, cls in reversed(det):
                         if self.save_txt:  # Write to file
-                            xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                            line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
-                            with open(txt_path + '.txt', 'a') as f:
-                                f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
+                            self.fileGen.Generate_Annotation(xyxy, conf, cls)
+                            
                         if self.save_img or self.view_img:  # Add bbox to image
                             label = f'{self.names[int(cls)]} {conf:.2f}'
                             plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
@@ -178,6 +183,8 @@ class ModelInferenceHandler:
                                 save_path += '.mp4'
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im0)
+                detections.append(det)
+            self.preds[imgIndex] = detections
         #if self.save_txt or self.save_img:
         #s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if self.save_txt else ''
         #print(f"Results saved to {save_dir}{s}")

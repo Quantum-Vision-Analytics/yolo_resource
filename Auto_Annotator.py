@@ -1,6 +1,5 @@
 from ModelInferenceHandler import ModelInferenceHandler
 from AnnotationVerifier import AnnotationVerifier
-from FileGenerator import FileGenerator
 import argparse
 import torch
 from utils.general import strip_optimizer
@@ -9,7 +8,6 @@ class Auto_Annotator:
     def __init__(self,options):
         self.modelInfHandler = ModelInferenceHandler()
         self.modelInfHandler.SetOptions(options)
-        self.filegGen = FileGenerator()
         self.annotVer = AnnotationVerifier()
 
     def Process(self):
