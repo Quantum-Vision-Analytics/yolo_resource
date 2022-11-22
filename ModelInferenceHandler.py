@@ -148,11 +148,11 @@ class ModelInferenceHandler:
                         s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                     # Write results
-                    self.fileGen.SetGenerator(txt_path, gn, self.opt.save_conf)
-                    #for *xyxy, conf, cls in reversed(det):
                     for *xyxy, conf, cls in reversed(det):
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
                         if self.save_txt:  # Write to file
-                            self.fileGen.Generate_Annotation(xyxy, conf, cls)
+                            self.fileGen.Generate_Annotation(txt_path, line)
                             
                         if self.save_img or self.view_img:  # Add bbox to image
                             label = f'{self.names[int(cls)]} {conf:.2f}'
