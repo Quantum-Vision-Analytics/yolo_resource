@@ -123,6 +123,8 @@ class ModelInferenceHandler:
 
     def Postprocess(self):
     # Process detections
+        #Will store all the detections for annotation verifier
+        detectList = []
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             pred = self.preds[imgIndex]
@@ -190,3 +192,4 @@ class ModelInferenceHandler:
         #print(f"Results saved to {save_dir}{s}")
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
+        return detectList.sort()

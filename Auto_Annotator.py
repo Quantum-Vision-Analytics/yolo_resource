@@ -13,7 +13,8 @@ class Auto_Annotator:
     def Process(self):
         self.modelInfHandler.Preprocess()
         self.modelInfHandler.Predict()
-        self.modelInfHandler.Postprocess()
+        self.detectList = self.modelInfHandler.Postprocess()
+        self.detectList.sort()
 
 def Parsing():
     parser = argparse.ArgumentParser()
