@@ -14,7 +14,6 @@ class Auto_Annotator:
         self.modelInfHandler.Preprocess()
         self.modelInfHandler.Predict()
         self.detectList = self.modelInfHandler.Postprocess()
-        self.detectList.sort()
 
 def Parsing():
     parser = argparse.ArgumentParser()

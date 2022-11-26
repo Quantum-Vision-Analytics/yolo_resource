@@ -124,7 +124,6 @@ class ModelInferenceHandler:
     def Postprocess(self):
     # Process detections
         #Will store all the detections for annotation verifier
-        detectList = []
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             pred = self.preds[imgIndex]
@@ -151,6 +150,7 @@ class ModelInferenceHandler:
                     for *xyxy, conf, cls in reversed(det):
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
+                        detections.append(('%g ' * len(line)).rstrip() % line)
                         if self.save_txt:  # Write to file
                             self.fileGen.Generate_Annotation(txt_path, line)
                             
@@ -185,11 +185,10 @@ class ModelInferenceHandler:
                                 save_path += '.mp4'
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im0)
-                detections.append(det)
-            self.preds[imgIndex] = detections
+            self.preds[imgIndex] = detections.reverse()
         #if self.save_txt or self.save_img:
         #s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if self.save_txt else ''
         #print(f"Results saved to {save_dir}{s}")
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
-        return detectList.sort()
+        return self.preds
