@@ -17,8 +17,10 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized,
 from FileGenerator import FileGenerator
 
 class ModelInferenceHandler:
-    def __init__(self):
+    def __init__(self, options = None):
         self.fileGen = FileGenerator()
+        if(options is not None):
+            self.SetOptions(options)
 
     def SetOptions(self,options):
         self.opt = options
@@ -110,7 +112,7 @@ class ModelInferenceHandler:
             timelap.append(time_synchronized())
 
             # Apply NMS
-            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.opt.classes, agnostic=self.opt.agnostic_nms)
+            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.opt.classes, agnostic=self.opt.agnostic_nms, multi_label=self.opt.multi_label)
             timelap.append(time_synchronized())
 
             self.timelaps.append(timelap)
@@ -123,6 +125,7 @@ class ModelInferenceHandler:
 
     def Postprocess(self):
     # Process detections
+        detRes = []
         #Will store all the detections for annotation verifier
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
@@ -185,10 +188,10 @@ class ModelInferenceHandler:
                                 save_path += '.mp4'
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im0)
-            self.preds[imgIndex] = detections.reverse()
+            detRes.append(detections.reverse())
         #if self.save_txt or self.save_img:
         #s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if self.save_txt else ''
         #print(f"Results saved to {save_dir}{s}")
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
-        return self.preds
+        return detRes

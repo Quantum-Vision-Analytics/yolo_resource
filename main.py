@@ -9,6 +9,18 @@ class App:
         root.title("Test App")
         root.geometry("1280x720")
         root.maxsize(1600,900)
+        """
+        lab0 = Label(root, text="Example Interface", background="black", font=("Courier", 35))
+        lab0.grid(row=1,column=2)
+        lab05 = Text(root, height=2, width=6, bg="gray")
+        lab05.grid(row=1,column=1)
+        img = cv2.imread('D:/Coding/Retro Trees.jpg', 1)
+        img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        imgtk = ImageTk.PhotoImage(image=img) 
+        lab1 = Label(root, image=imgtk)
+        lab1.grid(row=2,column=1, rowspan=3)
+        #lab1.pack()
+        """
         
         lab0 = Label(root, text="TestText,TexTest", background="black", font= ("Courier", 1))
         #All in one
@@ -44,6 +56,7 @@ class App:
         imgtk = ImageTk.PhotoImage(image=im) 
         lab1 = Label(root, image=imgtk)
         lab1.pack()
+        
         self.root = root
         self.root.mainloop()
 

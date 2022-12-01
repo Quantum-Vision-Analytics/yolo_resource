@@ -6,8 +6,8 @@ from utils.general import strip_optimizer
 
 class Auto_Annotator:
     def __init__(self,options):
-        self.modelInfHandler = ModelInferenceHandler()
-        self.modelInfHandler.SetOptions(options)
+        self.modelInfHandler = ModelInferenceHandler(options)
+        #self.modelInfHandler.SetOptions(options)
         self.annotVer = AnnotationVerifier()
 
     def Process(self):
@@ -31,10 +31,13 @@ def Parsing():
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default='runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
+    parser.add_argument('--project', default='detections', help='save results to project/name')
+    #parser.add_argument('--project', default='runs/detect', help='save results to project/name')
+    parser.add_argument('--name', default='result', help='save results to project/name')
+    #parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--multi-label', action='store_true', help='label with multiple classes')
     return parser.parse_args()
     #print(opt)
     #check_requirements(exclude=('pycocotools', 'thop'))
