@@ -89,6 +89,13 @@ class ModelInferenceHandler:
 
             self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
+        inputClasses = self.opt.classes
+        self.filterClasses = []
+        for i, cls in enumerate(self.names):
+            if(cls in inputClasses):
+                self.filterClasses.append(i)
+                
+
 
     def Predict(self):
         self.preds = []
@@ -112,7 +119,7 @@ class ModelInferenceHandler:
             timelap.append(time_synchronized())
 
             # Apply NMS
-            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.opt.classes, agnostic=self.opt.agnostic_nms, multi_label=self.opt.multi_label)
+            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.filterClasses, agnostic=self.opt.agnostic_nms, multi_label=self.opt.multi_label)
             timelap.append(time_synchronized())
 
             self.timelaps.append(timelap)
