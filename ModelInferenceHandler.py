@@ -89,7 +89,7 @@ class ModelInferenceHandler:
 
             self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
-        
+        #Filter classes by input class names
         if(self.opt.classes is not None):
             inputClasses = self.opt.classes
             self.filterClasses = []
@@ -167,7 +167,7 @@ class ModelInferenceHandler:
                         detections.append(('%g ' * len(line)).rstrip() % line)
                         if self.save_txt:  # Write to file
                             self.fileGen.Generate_Annotation(txt_path, line)
-                            
+                                                        
                         if self.save_img or self.view_img:  # Add bbox to image
                             label = f'{self.names[int(cls)]} {conf:.2f}'
                             plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
@@ -206,4 +206,9 @@ class ModelInferenceHandler:
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
 
+        #Create classes file
+        if self.save_txt:
+            with open(txt_path + '.txt', 'a') as asclsFile:
+                for cls in self.names:
+                    pass
         return detRes
