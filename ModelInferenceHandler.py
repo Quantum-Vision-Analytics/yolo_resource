@@ -91,9 +91,10 @@ class ModelInferenceHandler:
 
         inputClasses = self.opt.classes
         self.filterClasses = []
-        for i, cls in enumerate(self.names):
-            if(cls in inputClasses):
-                self.filterClasses.append(i)
+        if(inputClasses is not None):
+            for i, cls in enumerate(self.names):
+                if(cls in inputClasses):
+                    self.filterClasses.append(i)
                 
 
 
@@ -201,4 +202,5 @@ class ModelInferenceHandler:
         #print(f"Results saved to {save_dir}{s}")
 
         #print(f'Done. ({time.time() - t0:.3f}s)')
+
         return detRes
