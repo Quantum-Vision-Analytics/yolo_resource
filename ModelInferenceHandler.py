@@ -208,7 +208,7 @@ class ModelInferenceHandler:
 
         #Create classes file
         if self.save_txt:
-            with open(txt_path + '.txt', 'a') as asclsFile:
+            with open(str(self.save_dir) + '/labels/classes.txt', 'w') as clsFile:
                 for cls in self.names:
-                    pass
+                    clsFile.write(cls + "\n")
         return detRes
