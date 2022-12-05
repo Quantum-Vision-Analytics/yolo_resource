@@ -90,11 +90,13 @@ class ModelInferenceHandler:
             self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
         inputClasses = self.opt.classes
-        self.filterClasses = []
         if(inputClasses is not None):
+            self.filterClasses = []
             for i, cls in enumerate(self.names):
                 if(cls in inputClasses):
                     self.filterClasses.append(i)
+        else:
+            self.filterClasses = None
                 
 
 
