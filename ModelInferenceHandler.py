@@ -89,7 +89,7 @@ class ModelInferenceHandler:
 
             self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
-        
+        #Filter classes by input class names
         if(self.opt.classes is not None):
             inputClasses = self.opt.classes
             self.filterClasses = []
