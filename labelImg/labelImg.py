@@ -45,6 +45,8 @@ from libs.yolo_io import YoloReader
 from libs.yolo_io import TXT_EXT
 from libs.create_ml_io import CreateMLReader
 from libs.create_ml_io import JSON_EXT
+from libs.coco_io import CocoReader
+from libs.coco_io import JSON_EXT
 from libs.ustr import ustr
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
 
@@ -252,6 +254,8 @@ class MainWindow(QMainWindow, WindowMixin):
                 return '&YOLO', 'format_yolo'
             elif format == LabelFileFormat.CREATE_ML:
                 return '&CreateML', 'format_createml'
+            elif format == LabelFileFormat.COCO:
+                return '&COCO', 'format_coco'
 
         save_format = action(get_format_meta(self.label_file_format)[0],
                              self.change_format, 'Ctrl+Y',
@@ -568,12 +572,20 @@ class MainWindow(QMainWindow, WindowMixin):
             self.label_file_format = LabelFileFormat.CREATE_ML
             LabelFile.suffix = JSON_EXT
 
+        elif save_format == FORMAT_COCO:
+            self.actions.save_format.setText(FORMAT_COCO)
+            self.actions.save_format.setIcon(new_icon("format_coco"))
+            self.label_file_format = LabelFileFormat.COCO
+            LabelFile.suffix = JSON_EXT
+
     def change_format(self):
         if self.label_file_format == LabelFileFormat.PASCAL_VOC:
             self.set_format(FORMAT_YOLO)
         elif self.label_file_format == LabelFileFormat.YOLO:
             self.set_format(FORMAT_CREATEML)
         elif self.label_file_format == LabelFileFormat.CREATE_ML:
+            self.set_format(FORMAT_COCO)
+        elif self.label_file_format == LabelFileFormat.COCO:
             self.set_format(FORMAT_PASCALVOC)
         else:
             raise ValueError('Unknown label file format.')
@@ -908,6 +920,11 @@ class MainWindow(QMainWindow, WindowMixin):
                     annotation_file_path += JSON_EXT
                 self.label_file.save_create_ml_format(annotation_file_path, shapes, self.file_path, self.image_data,
                                                       self.label_hist, self.line_color.getRgb(), self.fill_color.getRgb())
+            elif self.label_file_format == LabelFileFormat.COCO:
+                if annotation_file_path[-5:].lower() != ".json":
+                    annotation_file_path += JSON_EXT
+                self.label_file.save_coco_format(annotation_file_path, shapes, self.file_path, self.image_data,
+                                                      self.label_hist, self.line_color.getRgb(), self.fill_color.getRgb())
             else:
                 self.label_file.save(annotation_file_path, shapes, self.file_path, self.image_data,
                                      self.line_color.getRgb(), self.fill_color.getRgb())
@@ -1193,6 +1210,8 @@ class MainWindow(QMainWindow, WindowMixin):
                 self.load_yolo_txt_by_filename(txt_path)
             elif os.path.isfile(json_path):
                 self.load_create_ml_json_by_filename(json_path, file_path)
+            elif os.path.isfile(json_path):
+                self.load_coco_json_by_filename(json_path, file_path)
 
         else:
             xml_path = os.path.splitext(file_path)[0] + XML_EXT
@@ -1205,6 +1224,8 @@ class MainWindow(QMainWindow, WindowMixin):
                 self.load_yolo_txt_by_filename(txt_path)
             elif os.path.isfile(json_path):
                 self.load_create_ml_json_by_filename(json_path, file_path)
+            elif os.path.isfile(json_path):
+                self.load_coco_json_by_filename(json_path, file_path)
             
 
     def resizeEvent(self, event):
@@ -1339,6 +1360,15 @@ class MainWindow(QMainWindow, WindowMixin):
 
             self.load_create_ml_json_by_filename(filename, self.file_path)         
         
+        elif self.label_file_format == LabelFileFormat.COCO:
+            
+            filters = "Open Annotation JSON file (%s)" % ' '.join(['*.json'])
+            filename = ustr(QFileDialog.getOpenFileName(self, '%s - Choose a json file' % __appname__, path, filters))
+            if filename:
+                if isinstance(filename, (tuple, list)):
+                    filename = filename[0]
+
+            self.load_coco_json_by_filename(filename, self.file_path)
 
     def open_dir_dialog(self, _value=False, dir_path=None, silent=False):
         if not self.may_continue():
@@ -1654,6 +1684,19 @@ class MainWindow(QMainWindow, WindowMixin):
         shapes = create_ml_parse_reader.get_shapes()
         self.load_labels(shapes)
         self.canvas.verified = create_ml_parse_reader.verified
+    
+    def load_coco_json_by_filename(self, json_path, file_path):
+        if self.file_path is None:
+            return
+        if os.path.isfile(json_path) is False:
+            return
+
+        self.set_format(FORMAT_COCO)
+
+        coco_parse_reader = CocoReader(json_path, file_path)
+        shapes = coco_parse_reader.get_shapes()
+        self.load_labels(shapes)
+        self.canvas.verified = coco_parse_reader.verified
 
     def copy_previous_bounding_boxes(self):
         current_index = self.m_img_list.index(self.file_path)
