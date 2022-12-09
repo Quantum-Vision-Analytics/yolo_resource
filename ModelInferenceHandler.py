@@ -37,7 +37,7 @@ class ModelInferenceHandler:
         # Directories
         # Get full system directory with relevant directory
         self.save_dir = Path(increment_path(Path(self.opt.project) / self.opt.name, exist_ok=self.opt.exist_ok))  # increment run
-        (self.save_dir / 'labels' if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+        #(self.save_dir / 'labels' if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
         # Initialize
         set_logging()
@@ -150,7 +150,8 @@ class ModelInferenceHandler:
 
                 p = Path(p)  # to Path
                 save_path = str(self.save_dir / p.name)  # img.jpg
-                txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
+                #txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
+                txt_path = str(self.save_dir / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                 if len(det):
                     # Rescale boxes from img_size to im0 size
@@ -208,7 +209,8 @@ class ModelInferenceHandler:
 
         #Create classes file
         if self.save_txt:
-            with open(str(self.save_dir) + '/labels/classes.txt', 'w') as clsFile:
+            #with open(str(self.save_dir) + '/labels/classes.txt', 'w') as clsFile:
+            with open(str(self.save_dir) + '/classes.txt', 'w') as clsFile:
                 for cls in self.names:
                     clsFile.write(cls + "\n")
         return detRes
