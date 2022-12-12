@@ -22,12 +22,14 @@ class ModelInferenceHandler:
         if(options is not None):
             self.SetOptions(options)
 
+    # Passing user arguments to this class
     def SetOptions(self,options):
         self.opt = options
 
     def Train(self):
         pass
-
+    
+    # Loading model and images, preprocessing them beforehand
     def Preprocess(self,save_img=False):
         source, weights, self.view_img, self.save_txt, imgsz, trace = self.opt.source, self.opt.weights, self.opt.view_img, self.opt.save_txt, self.opt.img_size, not self.opt.no_trace
         self.save_img = save_img; self.save_img = not self.opt.nosave and not source.endswith('.txt')  # save inference images
@@ -37,6 +39,7 @@ class ModelInferenceHandler:
         # Directories
         # Get full system directory with relevant directory
         self.save_dir = Path(increment_path(Path(self.opt.project) / self.opt.name, exist_ok=self.opt.exist_ok))  # increment run
+        (self.save_dir if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make new directory if needed
         #(self.save_dir / 'labels' if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
         # Initialize
@@ -79,6 +82,7 @@ class ModelInferenceHandler:
         self.old_img_w = self.old_img_h = imgsz
         self.old_img_b = 1
 
+        # Preprocess images
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             img = torch.from_numpy(img).to(self.device)
@@ -89,7 +93,7 @@ class ModelInferenceHandler:
 
             self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
-        #Filter classes by input class names
+        # Filter classes by given class names as input
         if(self.opt.classes is not None):
             inputClasses = self.opt.classes
             self.filterClasses = []
@@ -97,13 +101,14 @@ class ModelInferenceHandler:
                 if(cls in inputClasses):
                     self.filterClasses.append(i)
         else:
-            self.filterClasses = None
-                
+            self.filterClasses = None  
 
-
+    # Object detection and classification
     def Predict(self):
-        self.preds = []
-        self.timelaps = []
+        self.preds = [] # List of coordinates and class keys of predictions/labels
+        self.timelaps = [] # Record the timelaps of per prediction
+
+        # Iterate per image
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             timelap = []
@@ -134,10 +139,11 @@ class ModelInferenceHandler:
             self.preds.append(pred)
         self.dataset.data[imgIndex] = [path, img, im0s, vid_cap]
 
+    # Process results and save the labels
     def Postprocess(self):
-    # Process detections
         detRes = []
-        #Will store all the detections for annotation verifier
+
+        # Will store all the detections for annotation verifier
         for imgIndex, data in enumerate(self.dataset.data):
             path, img, im0s, vid_cap = data
             pred = self.preds[imgIndex]
@@ -150,7 +156,7 @@ class ModelInferenceHandler:
 
                 p = Path(p)  # to Path
                 save_path = str(self.save_dir / p.name)  # img.jpg
-                #txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
+                # txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
                 txt_path = str(self.save_dir / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                 if len(det):
@@ -209,8 +215,5 @@ class ModelInferenceHandler:
 
         #Create classes file
         if self.save_txt:
-            #with open(str(self.save_dir) + '/labels/classes.txt', 'w') as clsFile:
-            with open(str(self.save_dir) + '/classes.txt', 'w') as clsFile:
-                for cls in self.names:
-                    clsFile.write(cls + "\n")
+            self.fileGen.Generate_Classes(str(self.save_dir), self.names)
         return detRes
