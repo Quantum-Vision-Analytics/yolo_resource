@@ -1351,14 +1351,21 @@ class MainWindow(QMainWindow, WindowMixin):
             self.load_pascal_xml_by_filename(filename)
 
         elif self.label_file_format == LabelFileFormat.CREATE_ML:
-            
             filters = "Open Annotation JSON file (%s)" % ' '.join(['*.json'])
             filename = ustr(QFileDialog.getOpenFileName(self, '%s - Choose a json file' % __appname__, path, filters))
             if filename:
                 if isinstance(filename, (tuple, list)):
                     filename = filename[0]
 
-            self.load_create_ml_json_by_filename(filename, self.file_path)         
+            self.load_create_ml_json_by_filename(filename, self.file_path)
+        
+        elif self.label_file_format == LabelFileFormat.YOLO:#if self.usingYoloFormat:
+            filters = "Open Annotation YOLO text file (%s)" % ' '.join(['*.txt'])
+            filename = ustr(QFileDialog.getOpenFileName(self, '%s - Choose a txt file' % __appname__, path, filters))
+            if filename:
+                if isinstance(filename, (tuple, list)):
+                    filename = filename[0]
+            self.load_yolo_txt_by_filename(filename)   
         
         elif self.label_file_format == LabelFileFormat.COCO:
             

@@ -4,16 +4,19 @@ import argparse
 import torch
 from utils.general import strip_optimizer
 
+# Master class to call all sub-classes
 class Auto_Annotator:
     def __init__(self,options):
         self.modelInfHandler = ModelInferenceHandler(options)
         self.annotVer = AnnotationVerifier()
 
+    # Process, predict and save predictions systematically
     def Process(self):
         self.modelInfHandler.Preprocess()
         self.modelInfHandler.Predict()
         self.detectList = self.modelInfHandler.Postprocess()
 
+# Get user arguments/inputs
 def Parsing():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
@@ -38,6 +41,7 @@ def Parsing():
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
+# Auto launch program
 if __name__ == "__main__":
     opt = Parsing()
     aa = Auto_Annotator(opt)
