@@ -7,6 +7,7 @@ from utils.general import strip_optimizer
 # Master class to call all sub-classes
 class Auto_Annotator:
     def __init__(self,options):
+        self.opt = options
         self.modelInfHandler = ModelInferenceHandler(options)
         self.annotVer = AnnotationVerifier()
 
@@ -16,11 +17,16 @@ class Auto_Annotator:
         self.modelInfHandler.Predict()
         self.detectList = self.modelInfHandler.Postprocess()
 
+        #if(self.modelInfHandler.opt.no_verify == False):
+            #self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
+            #self.annotVer.annot_verifier("labelImg/imagesTest","labelImg/det")
+        
+
 # Get user arguments/inputs
 def Parsing():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--source', type=str, default='imagesTest', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
@@ -38,6 +44,7 @@ def Parsing():
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     parser.add_argument('--multi-label', action='store_true', help='label with multiple classes')
+    parser.add_argument('--no-verify', action='store_true', help='don`t verify images')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
