@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 import json
 from pathlib import Path
-
+import datetime
 from libs.constants import DEFAULT_ENCODING
 import os
 
@@ -12,11 +12,17 @@ ENCODE_METHOD = DEFAULT_ENCODING
 
 class COCOWriter:
     def __init__(self, folder_name, filename, img_size, shapes, output_file, database_src='Unknown', local_img_path=None):
+        self.id = id
+        self.image_id = image_id
+        self.category_id = category_id
+        self.segmentation = []
+        self.area = float
+        self.iscrowd = bool
         self.folder_name = folder_name
         self.filename = filename
         self.database_src = database_src
         self.img_size = img_size
-        self.box_list = []
+        self.bbox = []
         self.local_img_path = local_img_path
         self.verified = False
         self.shapes = shapes
@@ -29,11 +35,19 @@ class COCOWriter:
                 output_dict = json.loads(input_data)
         else:
             output_dict = []
-
+        
+        info = {"year": int,"version": str,"description": str,"contributor": str,"url": str,"date_created": datetime,}
+        license = [{"id":int,"name":str,"url":str,}]
+        category = [{id:int,"name":str,"supercategory":str,}]
+        image = [{"id":int,"width":int,"height":int,"filename":str,"license":int,"flicker_url":str,"coco_url":str,"date_captured":datetime,}]
+        annotation = [{"id":int,"image_id":int,"category_id":int,"segmentation":RLE or [polygon],"area":float,"bbox":[x,y,width,height],"iscrowd":0 or 1,}]
+        
         output_image_dict = {
-            "image": self.filename,
-            "verified": self.verified,
-            "annotations": []
+            "info": info,
+            "licenses": [license],
+            "categories": [category],
+            "images": [image],
+            "annotations": [annotation]
         }
 
         for shape in self.shapes:
