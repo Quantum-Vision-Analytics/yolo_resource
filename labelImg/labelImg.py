@@ -1302,7 +1302,6 @@ class MainWindow(QMainWindow, WindowMixin):
         dir_path = ustr(QFileDialog.getExistingDirectory(self,
                                                          '%s - Save annotations to the directory' % __appname__, path,  QFileDialog.ShowDirsOnly
                                                          | QFileDialog.DontResolveSymlinks))
-
         if dir_path is not None and len(dir_path) > 1:
             self.default_save_dir = dir_path
 
@@ -1676,6 +1675,32 @@ class MainWindow(QMainWindow, WindowMixin):
     def toggle_draw_square(self):
         self.canvas.set_drawing_shape_to_square(self.draw_squares_option.isChecked())
 
+    def auto_boot_dir(self, img_path=None, label_path=None):
+        #Images
+        if not self.may_continue():
+            return
+
+        #Check if the directory exists
+        if img_path:
+            default_open_dir_path = img_path if os.path.exists(os.path.dirname(img_path)) else '.'
+        else:
+            default_open_dir_path = '.'
+
+        target_dir_path = ustr(default_open_dir_path)
+        self.last_open_dir = target_dir_path
+        self.import_dir_images(target_dir_path)
+        self.default_save_dir = target_dir_path
+        if self.file_path:
+            self.show_bounding_box_from_annotation_file(file_path=self.file_path)
+
+        #Labels
+        if label_path is not None and len(label_path) > 1:
+            self.default_save_dir = label_path
+
+        self.show_bounding_box_from_annotation_file(self.file_path)
+        self.statusBar().showMessage('%s . Annotation will be saved to %s' % ('Change saved folder', self.default_save_dir))
+        self.statusBar().show()
+        
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
 
@@ -1702,23 +1727,24 @@ def get_main_app(argv=None):
     # Tzutalin 201705+: Accept extra agruments to change predefined class file
     argparser = argparse.ArgumentParser()
     argparser.add_argument("image_dir", nargs="?")
+    argparser.add_argument("save_dir", nargs="?")
     argparser.add_argument("class_file",
                            default=os.path.join(os.path.dirname(__file__), "data", "predefined_classes.txt"),
                            nargs="?")
-    argparser.add_argument("save_dir", nargs="?")
     args = argparser.parse_args(argv[1:])
 
-    args.image_dir = args.image_dir and os.path.normpath(args.image_dir)
-    args.class_file = args.class_file and os.path.normpath(args.class_file)
-    args.save_dir = args.save_dir and os.path.normpath(args.save_dir)
+    #args.class_file = args.save_dir if args.class_file == "." else args.class_file
+    #default=os.path.join(os.path.dirname(__file__), "yo", "classes.txt"
+    #args.image_dir = args.image_dir and os.path.normpath(args.image_dir)
+    #args.save_dir = args.save_dir and os.path.normpath(args.save_dir)
+    #args.class_file = args.class_file and os.path.normpath(args.class_file)
 
     # Usage : labelImg.py image classFile saveDir
-    win = MainWindow(args.image_dir,
-                     args.class_file,
-                     args.save_dir)
+    win = MainWindow(args.image_dir, args.class_file, args.save_dir)
+    win.auto_boot_dir(args.image_dir, args.save_dir)
+
     win.show()
     return app, win
-
 
 def main():
     """construct main app and run it"""
