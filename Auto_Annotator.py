@@ -17,9 +17,9 @@ class Auto_Annotator:
         self.modelInfHandler.Predict()
         self.detectList = self.modelInfHandler.Postprocess()
 
-        #if(self.modelInfHandler.opt.no_verify == False):
-            #self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
-            #self.annotVer.annot_verifier("labelImg/imagesTest","labelImg/det")
+        if(self.modelInfHandler.opt.no_verify == False):
+            self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
+            #self.annotVer.annot_verifier("imagesTest","detections/result")
         
 
 # Get user arguments/inputs
