@@ -24,4 +24,4 @@ class AnnotationVerifier():
         pass
 
 #av = AnnotationVerifier()
-#av.annot_verifier("labelImg/imagesTest","labelImg/det")
+#av.annot_verifier("imagesTest","detections/result")
