@@ -45,7 +45,8 @@ class ModelInferenceHandler:
         # Initialize
         set_logging()
         self.device = select_device(self.opt.device)
-        self.half = self.device.type != 'cpu'  # half precision only supported on CUDA
+        #self.half = self.device.type != 'cpu'  # half precision only supported on CUDA
+        self.half = False
 
         # Load model
         self.model = attempt_load(weights, map_location=self.device)  # load FP32 model

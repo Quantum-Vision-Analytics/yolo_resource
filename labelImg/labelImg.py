@@ -1784,7 +1784,8 @@ def get_main_app(argv=None):
 
     # Usage : labelImg.py image classFile saveDir
     win = MainWindow(args.image_dir, args.class_file, args.save_dir)
-    win.auto_boot_dir(args.image_dir, args.save_dir)
+    if(args.image_dir or args.save_dir):
+        win.auto_boot_dir(args.image_dir, args.save_dir)
 
     win.show()
     return app, win
