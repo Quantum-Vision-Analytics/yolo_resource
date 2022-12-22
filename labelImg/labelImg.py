@@ -1783,8 +1783,8 @@ def get_main_app(argv=None):
     #args.class_file = args.class_file and os.path.normpath(args.class_file)
 
     # Usage : labelImg.py image classFile saveDir
-    #win = MainWindow(args.image_dir, args.class_file, args.save_dir)
-    win = MainWindow()
+    win = MainWindow(args.image_dir, args.class_file, args.save_dir)
+    #win = MainWindow()
     if(args.image_dir or args.save_dir):
         win.auto_boot_dir(args.image_dir, args.save_dir)
 
