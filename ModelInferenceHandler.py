@@ -44,7 +44,7 @@ class ModelInferenceHandler:
 
         # Initialize
         set_logging()
-        #dffself.device = select_device(self.opt.device)
+        self.device = select_device(self.opt.device)
         #self.half = self.device.type != 'cpu'  # half precision only supported on CUDA
         self.half = False
 
