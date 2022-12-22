@@ -522,13 +522,13 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Populate the File menu dynamically.
         self.update_file_menu()
-
+        
         # Since loading the file may take some time, make sure it runs in the background.
         if self.file_path and os.path.isdir(self.file_path):
             self.queue_event(partial(self.import_dir_images, self.file_path or ""))
         elif self.file_path:
             self.queue_event(partial(self.load_file, self.file_path or ""))
-
+        
         # Callbacks:
         self.zoom_widget.valueChanged.connect(self.paint_canvas)
         self.light_widget.valueChanged.connect(self.paint_canvas)
@@ -538,11 +538,11 @@ class MainWindow(QMainWindow, WindowMixin):
         # Display cursor coordinates at the right of status bar
         self.label_coordinates = QLabel('')
         self.statusBar().addPermanentWidget(self.label_coordinates)
-
+        
         # Open Dir if default file
         if self.file_path and os.path.isdir(self.file_path):
             self.open_dir_dialog(dir_path=self.file_path, silent=True)
-
+        
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Control:
             self.canvas.set_drawing_shape_to_square(False)
@@ -1718,11 +1718,9 @@ class MainWindow(QMainWindow, WindowMixin):
     def toggle_draw_square(self):
         self.canvas.set_drawing_shape_to_square(self.draw_squares_option.isChecked())
 
-    def auto_boot_dir(self, img_path=None, label_path=None):
+    def auto_boot_dir(self, label_path=None):
         #Images
-        if not self.may_continue():
-            return
-
+        '''
         #Check if the directory exists
         if img_path:
             default_open_dir_path = img_path if os.path.exists(os.path.dirname(img_path)) else '.'
@@ -1735,7 +1733,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.default_save_dir = target_dir_path
         if self.file_path:
             self.show_bounding_box_from_annotation_file(file_path=self.file_path)
-
+        '''
         #Labels
         if label_path is not None and len(label_path) > 1:
             self.default_save_dir = label_path
@@ -1783,10 +1781,11 @@ def get_main_app(argv=None):
     #args.class_file = args.class_file and os.path.normpath(args.class_file)
 
     # Usage : labelImg.py image classFile saveDir
-    win = MainWindow(args.image_dir, args.class_file, args.save_dir)
-    #win = MainWindow()
+    #win = MainWindow(args.image_dir, args.class_file, args.save_dir)
+    win = MainWindow(args.image_dir, args.class_file, '')
     if(args.image_dir or args.save_dir):
-        win.auto_boot_dir(args.image_dir, args.save_dir)
+        win.auto_boot_dir(args.save_dir)
+        #win.auto_boot_dir(args.image_dir, args.save_dir)
 
     win.show()
     return app, win
