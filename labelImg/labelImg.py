@@ -1719,21 +1719,6 @@ class MainWindow(QMainWindow, WindowMixin):
         self.canvas.set_drawing_shape_to_square(self.draw_squares_option.isChecked())
 
     def auto_boot_dir(self, label_path=None):
-        #Images
-        '''
-        #Check if the directory exists
-        if img_path:
-            default_open_dir_path = img_path if os.path.exists(os.path.dirname(img_path)) else '.'
-        else:
-            default_open_dir_path = '.'
-
-        target_dir_path = ustr(default_open_dir_path)
-        self.last_open_dir = target_dir_path
-        self.import_dir_images(target_dir_path)
-        self.default_save_dir = target_dir_path
-        if self.file_path:
-            self.show_bounding_box_from_annotation_file(file_path=self.file_path)
-        '''
         #Labels
         if label_path is not None and len(label_path) > 1:
             self.default_save_dir = label_path
@@ -1781,11 +1766,9 @@ def get_main_app(argv=None):
     #args.class_file = args.class_file and os.path.normpath(args.class_file)
 
     # Usage : labelImg.py image classFile saveDir
-    #win = MainWindow(args.image_dir, args.class_file, args.save_dir)
-    win = MainWindow(args.image_dir, args.class_file, '')
+    win = MainWindow(args.image_dir, args.class_file, None)
     if(args.image_dir or args.save_dir):
         win.auto_boot_dir(args.save_dir)
-        #win.auto_boot_dir(args.image_dir, args.save_dir)
 
     win.show()
     return app, win
