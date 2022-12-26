@@ -135,17 +135,18 @@ class Export:
                         "<name>" + str(df_smaller.loc[index]["cat_name"]) + "</name>"
                     )
                     pose_text = (
-                        "<pose>" + str(df_smaller.loc[index]["ann_pose"]) + "</pose>"
+                        "<pose>" + str(df_smaller.loc[index]["ann_pose"])
+                        + "</pose>" if df_smaller.loc[index]["ann_pose"] else ""
                     )
                     truncated_text = (
                         "<truncated>"
                         + str(df_smaller.loc[index]["ann_truncated"])
-                        + "</truncated>"
+                        + "</truncated>" if df_smaller.loc[index]["ann_truncated"] else ""
                     )
                     difficult_text = (
                         "<difficult>"
                         + str(df_smaller.loc[index]["ann_difficult"])
-                        + "</difficult>"
+                        + "</difficult>" if df_smaller.loc[index]["ann_difficult"] else ""
                     )
 
                     occluded_text = ""
