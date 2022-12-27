@@ -131,6 +131,10 @@ class Export:
 
                     object_text_start = "<object>"
 
+                    print(str(df_smaller.loc[index]["ann_pose"]))
+                    print(str(df_smaller.loc[index]["ann_truncated"]))
+                    print(str(df_smaller.loc[index]["ann_difficult"]))
+
                     name_text = (
                         "<name>" + str(df_smaller.loc[index]["cat_name"]) + "</name>"
                     )
