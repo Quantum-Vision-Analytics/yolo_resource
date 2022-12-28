@@ -130,7 +130,7 @@ class Export:
                 if not pd.isnull(df_smaller.loc[index]["cat_id"]):
 
                     object_text_start = "<object>"
-
+                    print("1")
                     print(str(df_smaller.loc[index]["ann_pose"]))
                     print(str(df_smaller.loc[index]["ann_truncated"]))
                     print(str(df_smaller.loc[index]["ann_difficult"]))
@@ -302,21 +302,26 @@ class Export:
                 for obj in range(len(df_smaller)):
                     object_text_start = "<object>"
 
+                    print("2")
+                    print(str(df_smaller.loc[obj]["ann_pose"]))
+                    print(str(df_smaller.loc[obj]["ann_truncated"]))
+                    print(str(df_smaller.loc[obj]["ann_difficult"]))
+
                     name_text = (
                         "<name>" + str(df_smaller.loc[obj]["cat_name"]) + "</name>"
+                        if df_smaller.loc[obj]["cat_name"] else ""
                     )
                     pose_text = (
                         "<pose>" + str(df_smaller.loc[obj]["ann_pose"]) + "</pose>"
+                        if df_smaller.loc[obj]["ann_pose"] else ""
                     )
                     truncated_text = (
-                        "<truncated>"
-                        + str(df_smaller.loc[obj]["ann_truncated"])
-                        + "</truncated>"
+                        "<truncated>" + str(df_smaller.loc[obj]["ann_truncated"])
+                        + "</truncated>" if df_smaller.loc[obj]["ann_trincated"] else ""
                     )
                     difficult_text = (
-                        "<difficult>"
-                        + str(df_smaller.loc[obj]["ann_difficult"])
-                        + "</difficult>"
+                        "<difficult>" + str(df_smaller.loc[obj]["ann_difficult"])
+                        + "</difficult>" if df_smaller.loc[obj]["ann_difficult"] else ""
                     )
 
                     # occ_lkp = str(df_smaller.loc[index]['Object Occluded'])
