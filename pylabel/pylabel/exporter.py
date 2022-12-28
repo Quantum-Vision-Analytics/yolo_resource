@@ -13,6 +13,9 @@ from pylabel.shared import _ReindexCatIds
 
 from pathlib import PurePath, Path
 
+empText = "><"
+def IsEmpty(text:str):
+    return text if text.find(empText = "><") else ""
 
 class Export:
     def __init__(self, dataset=None):
@@ -130,10 +133,6 @@ class Export:
                 if not pd.isnull(df_smaller.loc[index]["cat_id"]):
 
                     object_text_start = "<object>"
-                    print("1")
-                    print(str(df_smaller.loc[index]["ann_pose"]))
-                    print(str(df_smaller.loc[index]["ann_truncated"]))
-                    print(str(df_smaller.loc[index]["ann_difficult"]))
 
                     name_text = (
                         "<name>" + str(df_smaller.loc[index]["cat_name"]) + "</name>"
@@ -207,14 +206,14 @@ class Export:
                     + size_text_start
                     + width_text
                     + height_text
-                    + depth_text
+                    + IsEmpty(depth_text)
                     + size_text_end
                     + segmented_text
                     + object_text_start
                     + name_text
-                    + pose_text
-                    + truncated_text
-                    + difficult_text
+                    + IsEmpty(pose_text)
+                    + IsEmpty(truncated_text)
+                    + IsEmpty(difficult_text)
                     + occluded_text
                     + bound_box_text_start
                     + xmin_text
@@ -294,7 +293,7 @@ class Export:
                     + size_text_start
                     + width_text
                     + height_text
-                    + depth_text
+                    + IsEmpty(depth_text)
                     + size_text_end
                     + segmented_text
                 )
@@ -362,9 +361,9 @@ class Export:
                         xmlstring
                         + object_text_start
                         + name_text
-                        + pose_text
-                        + truncated_text
-                        + difficult_text
+                        + IsEmpty(pose_text)
+                        + IsEmpty(truncated_text)
+                        + IsEmpty(difficult_text)
                         + occluded_text
                         + bound_box_text_start
                         + xmin_text
