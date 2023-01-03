@@ -216,7 +216,7 @@ class ModelInferenceHandler:
         # Don't pass im0 as argument when unnecessary
         #Iterate per image
         for data in self.dataset:
-            data = self.Preprocess(data)
-            data = self.Predict(data)
-            #Seperate
-            data = self.Postprocess(data)
+            with torch.no_grad():
+                data = self.Preprocess(data)
+                data = self.Predict(data)
+                data = self.Postprocess(data)
