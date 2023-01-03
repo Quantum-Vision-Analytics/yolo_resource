@@ -13,11 +13,9 @@ class Auto_Annotator:
 
     # Process, predict and save predictions systematically
     def Process(self):
-        self.modelInfHandler.Preprocess()
-        self.modelInfHandler.Predict()
-        self.detectList = self.modelInfHandler.Postprocess()
+        self.modelInfHandler.Detect()
 
-        if(self.modelInfHandler.opt.no_verify == False):
+        if(not self.opt.no_verify):
             self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
             #self.annotVer.annot_verifier("imagesTest","detections/result")
         
@@ -45,6 +43,7 @@ def Parsing():
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     parser.add_argument('--multi-label', action='store_true', help='label with multiple classes')
     parser.add_argument('--no-verify', action='store_true', help='don`t verify images')
+    parser.add_argument('--half-precision', action='store_true', help='use half precision')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
