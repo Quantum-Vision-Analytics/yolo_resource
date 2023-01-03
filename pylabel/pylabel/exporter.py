@@ -405,7 +405,7 @@ class Export:
 
     def ExportToYoloV5(
         self,
-        output_path="training/labels",
+        output_path=None,
         yaml_file="dataset.yaml",
         copy_images=False,
         use_splits=False,
