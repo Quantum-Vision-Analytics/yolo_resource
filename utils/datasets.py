@@ -153,6 +153,7 @@ class LoadImages:  # for inference
             self.cap = None
         assert self.nf > 0, f'No images or videos found in {p}. ' \
                             f'Supported formats are:\nimages: {img_formats}\nvideos: {vid_formats}'
+        self.count = 0
 
     def __iter__(self):
         self.count = 0

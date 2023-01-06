@@ -44,6 +44,8 @@ def Parsing():
     parser.add_argument('--multi-label', action='store_true', help='label with multiple classes')
     parser.add_argument('--no-verify', action='store_true', help='don`t verify images')
     parser.add_argument('--half-precision', action='store_true', help='use half precision')
+    parser.add_argument('--show-details', action='store_true', help='show detection details')
+    parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work at once per thread')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
