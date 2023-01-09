@@ -93,23 +93,25 @@ class ModelInferenceHandler:
 
     # Preprocessing images beforehand
     def Preprocess(self, batch:list):
-        for x, data in enumerate(batch):
-            path, img, im0s, vid_cap = data
+        x = 0
+        for path, img, im0s, vid_cap in batch:
+            #path, img, im0s, vid_cap = data
             img = torch.from_numpy(img).to(self.device)
             img = img.half() if self.half else img.float()  # uint8 to fp16/32
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
             if img.ndimension() == 3:
                 img = img.unsqueeze(0)
             batch[x] = (path, img, im0s, vid_cap)
+            x += 1
             #return (path, img, im0s, vid_cap)
         return batch
 
     # Object detection and classification
     def Predict(self, batch:list):
         #self.preds = [] # List of coordinates and class keys of predictions/labels
-
-        for x, data in enumerate(batch):
-            path, img, im0s, vid_cap = data
+        x = 0
+        for path, img, im0s, vid_cap in batch:
+            #path, img, im0s, vid_cap = data
             timelap = [0] * 3
 
             # Warmup
@@ -137,6 +139,7 @@ class ModelInferenceHandler:
             
             #return (path, img, im0s, vid_cap, pred, timelap)
             batch[x] = (path, img, im0s, vid_cap, pred, timelap)
+            x += 1
         return batch
 
     # Process results and save the labels
@@ -219,13 +222,12 @@ class ModelInferenceHandler:
             self.fileGen.Generate_Classes(str(self.save_dir), self.names)
 
     def Detect(self):
-        # Prepare for detection
         t0 = time_synchronized()
+        # Prepare for detection
         self.LoadResources()
         # Don't pass im0 as argument when unnecessary #self.dataset.count
         t1 = time_synchronized()
         batch_size = self.opt.batch_size
-        batch = []
         #lastIndex = self.dataset.nf - 1
         lastIndex = self.dataset.nf
         end = True
@@ -239,7 +241,7 @@ class ModelInferenceHandler:
             if(nextIndex < lastIndex):
                 for x in range(batch_size):
                     batch.append(self.dataset.__next__())
-                    
+
             else:
                 for x in range(batch_size - (nextIndex - lastIndex)):
                     batch.append(self.dataset.__next__())
