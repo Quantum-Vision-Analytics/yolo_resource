@@ -15,13 +15,26 @@ from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 from FileGenerator import FileGenerator
+import threading
 
 class ModelInferenceHandler:
     def __init__(self, options = None):
         self.fileGen = FileGenerator()
         if(options is not None):
             self.SetOptions(options)
+        self.TLock = threading.Lock()
 
+    def ThreadWork(self, batch:list):
+        with torch.no_grad():
+            batch = self.Preprocess(batch)
+            batch = self.Predict(batch)
+            self.Postprocess(batch)
+
+    def FreeThread(self, index):
+        self.TLock.acquire()
+        self.threads[index] = 0
+        self.TLock.release()
+    
     # Passing user arguments to this class
     def SetOptions(self,options):
         self.opt = options
@@ -89,7 +102,7 @@ class ModelInferenceHandler:
                 if(cls in inputClasses):
                     self.filterClasses.append(i)
         else:
-            self.filterClasses = None  
+            self.filterClasses = None
 
     # Preprocessing images beforehand
     def Preprocess(self, batch:list):
@@ -211,33 +224,26 @@ class ModelInferenceHandler:
                                 save_path += '.mp4'
                             self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         self.vid_writer.write(im0)
-            #if self.save_txt or self.save_img:
-            #s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if self.save_txt else ''
-            #print(f"Results saved to {save_dir}{s}")
-
-            #print(f'Done. ({time.time() - t0:.3f}s)')
-
-        #Create classes file
-        if self.save_txt:
-            self.fileGen.Generate_Classes(str(self.save_dir), self.names)
 
     def Detect(self):
-        t0 = time_synchronized()
         # Prepare for detection
+        t0 = time_synchronized()
         self.LoadResources()
-        # Don't pass im0 as argument when unnecessary #self.dataset.count
         t1 = time_synchronized()
-        batch_size = self.opt.batch_size
-        #lastIndex = self.dataset.nf - 1
+        batch_size = self.opt.batch_size if self.opt.batch_size > 1 else 5
+        self.threadCount = self.opt.thread_count if self.opt.thread_count > 0 else 2
+        sleep_time = 2
         lastIndex = self.dataset.nf
         end = True
+        threadList = []
         
         # Iterate per image
-
         nextIndex = 0
         while(end):
+            # Preparing batches
             nextIndex += batch_size
             batch = []
+
             if(nextIndex < lastIndex):
                 for x in range(batch_size):
                     batch.append(self.dataset.__next__())
@@ -246,21 +252,31 @@ class ModelInferenceHandler:
                 for x in range(batch_size - (nextIndex - lastIndex)):
                     batch.append(self.dataset.__next__())
                     end = False
+            
+            # Check if a thread is available
+            # If not, wait for a certain time for threads to finish
+            while(True):
+                if len(threadList) < self.threadCount:
+                    threadList.append(threading.Thread(target=self.ThreadWork, args=(batch,)))
+                    threadList[-1].run()
+                    break
+                else:
+                    for i in reversed(range(self.threadCount)):
+                        if not threadList[i].is_alive():
+                            del threadList[i]
 
-            with torch.no_grad():
-                batch = self.Preprocess(batch)
-                batch = self.Predict(batch)
-                self.Postprocess(batch)
-            del batch
+                    if len(threadList) == self.threadCount:
+                        time.sleep(sleep_time)
 
-        # for x, data in enumerate(self.dataset):
-        #     batch.append(data)
-        #     if x % batch_size == 0 or x == lastIndex:
-        #         with torch.no_grad():
-        #             batch = self.Preprocess(batch)
-        #             batch = self.Predict(batch)
-        #             self.Postprocess(batch)
-        #         del batch # Might be unnecessary, in that case use 'batch = []' directly
-        #         batch = []
+        # Wait for all threads to finish
+        for x in reversed(range(len(threadList))):
+            if threadList[x].is_alive():
+                threadList[x].join()
+
+        # Output timers
         t2 = time_synchronized()
         print(f"Loading model: {round(t1-t0,3)} seconds\nInference: {round(t2-t1,3)} seconds\nTotal time: {round(t2-t0,3)} seconds")
+
+        # Create classes file
+        if self.save_txt:
+            self.fileGen.Generate_Classes(str(self.save_dir), self.names)

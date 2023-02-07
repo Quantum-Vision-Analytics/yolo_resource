@@ -10,6 +10,7 @@ class Auto_Annotator:
         self.opt = options
         self.modelInfHandler = ModelInferenceHandler(options)
         self.annotVer = AnnotationVerifier()
+        print("Innit done")
 
     # Process, predict and save predictions systematically
     def Process(self):
@@ -17,7 +18,6 @@ class Auto_Annotator:
 
         if(not self.opt.no_verify):
             self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
-            #self.annotVer.annot_verifier("imagesTest","detections/result")
         
 
 # Get user arguments/inputs
@@ -45,7 +45,8 @@ def Parsing():
     parser.add_argument('--no-verify', action='store_true', help='don`t verify images')
     parser.add_argument('--half-precision', action='store_true', help='use half precision')
     parser.add_argument('--show-details', action='store_true', help='show detection details')
-    parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work at once per thread')
+    parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work on per thread')
+    parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
