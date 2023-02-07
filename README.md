@@ -15,10 +15,11 @@ class AutoAnnotator():
   
 class ModelInferenceHandler:  
     traininig(img_data, annoation_file) -> newobject_detector '''tennis raketli oyuncular bulmak'''
-    loadresources(args)
+    loadresources(args) -> Model and image loader
     preprocess(img_data) -> processed_img_data  
     predict(processed_img_data) -> detections  
     postproces(detections: list)
+    detect(args) -> annotations
   
 class AnnotationVerifier:
     def display(self, img, label, score, bbox):  
