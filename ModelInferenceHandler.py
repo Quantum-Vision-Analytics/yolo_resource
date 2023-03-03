@@ -22,19 +22,28 @@ class ModelInferenceHandler:
         self.fileGen = FileGenerator()
         if(options is not None):
             self.SetOptions(options)
-        self.TLock = threading.Lock()
+        self.sleep_time = 0.25
+        self.lock = threading.Lock()
 
-    def ThreadWork(self, batch:list):
-        with torch.no_grad():
-            batch = self.Preprocess(batch)
-            batch = self.Predict(batch)
-            self.Postprocess(batch)
+    def ThreadWork(self, initWait:int):
+        time.sleep(initWait)
+        # Continue until all images are read into batches and the queue is empty
+        while(self.batchQueue or self.ongoing):
+            # Wait for the lock
+            if self.batchQueue and not self.lock.locked():
+                # Get a batch from queue and lock the queue object at that time
+                self.lock.acquire()
+                batch = self.batchQueue.pop(0)
+                self.lock.release()
 
-    def FreeThread(self, index):
-        self.TLock.acquire()
-        self.threads[index] = 0
-        self.TLock.release()
-    
+                # Process the batch
+                with torch.no_grad():
+                    batch = self.Preprocess(batch)
+                    batch = self.Predict(batch)
+                    self.Postprocess(batch) 
+            else:
+                time.sleep(self.sleep_time) # Add random interval
+                 
     # Passing user arguments to this class
     def SetOptions(self,options):
         self.opt = options
@@ -209,7 +218,6 @@ class ModelInferenceHandler:
                 if self.save_img:
                     if self.dataset.mode == 'image':
                         cv2.imwrite(save_path, im0)
-                        print(f" The image with the result is saved in: {save_path}")
                     else:  # 'video' or 'stream'
                         if self.vid_path != save_path:  # new video
                             self.vid_path = save_path
@@ -232,14 +240,24 @@ class ModelInferenceHandler:
         t1 = time_synchronized()
         batch_size = self.opt.batch_size if self.opt.batch_size > 1 else 5
         self.threadCount = self.opt.thread_count if self.opt.thread_count > 0 else 2
-        sleep_time = 2
         lastIndex = self.dataset.nf
-        end = True
+        self.ongoing = True
         threadList = []
+        self.batchQueue = []
+        batch_buffer_limit = 3 # int(self.threadCount / 3) # Adjust
         
+        for i in range(self.threadCount):
+            threadList.append(threading.Thread(target=self.ThreadWork, args=(i * self.sleep_time + 1,)))
+            threadList[i].start()
+
         # Iterate per image
         nextIndex = 0
-        while(end):
+        while(self.ongoing):
+            # Wait if hit the batch buffer limit
+            if len(self.batchQueue) == batch_buffer_limit:
+                time.sleep(self.sleep_time)
+                continue
+
             # Preparing batches
             nextIndex += batch_size
             batch = []
@@ -247,31 +265,24 @@ class ModelInferenceHandler:
             if(nextIndex < lastIndex):
                 for x in range(batch_size):
                     batch.append(self.dataset.__next__())
+                self.lock.acquire()
+                self.batchQueue.append(batch)
+                self.lock.release()
 
             else:
                 for x in range(batch_size - (nextIndex - lastIndex)):
                     batch.append(self.dataset.__next__())
-                    end = False
-            
-            # Check if a thread is available
-            # If not, wait for a certain time for threads to finish
-            while(True):
-                if len(threadList) < self.threadCount:
-                    threadList.append(threading.Thread(target=self.ThreadWork, args=(batch,)))
-                    threadList[-1].run()
-                    break
-                else:
-                    for i in reversed(range(self.threadCount)):
-                        if not threadList[i].is_alive():
-                            del threadList[i]
-
-                    if len(threadList) == self.threadCount:
-                        time.sleep(sleep_time)
+                    self.ongoing = False
+                self.lock.acquire()
+                self.batchQueue.append(batch)
+                self.lock.release()
 
         # Wait for all threads to finish
         for x in reversed(range(len(threadList))):
             if threadList[x].is_alive():
                 threadList[x].join()
+        
+        del threadList
 
         # Output timers
         t2 = time_synchronized()
