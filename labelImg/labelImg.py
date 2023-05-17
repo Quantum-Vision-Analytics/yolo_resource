@@ -50,7 +50,7 @@ from libs.coco_io import JSON_EXT
 from libs.ustr import ustr
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
 
-__appname__ = 'labelImg'
+__appname__ = 'QVA AutoAnnotator'
 
 
 class WindowMixin(object):
