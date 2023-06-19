@@ -1,4 +1,3 @@
-from ModelInferenceHandler import ModelInferenceHandler
 from AnnotationVerifier import AnnotationVerifier
 import argparse
 import torch
@@ -8,17 +7,25 @@ from utils.general import strip_optimizer
 class Auto_Annotator:
     def __init__(self,options):
         self.opt = options
-        self.modelInfHandler = ModelInferenceHandler(options)
+        arc_opt = options.architecture.strip().lower()
+
+        if arc_opt in ["yolov7","yolo","yolo7"]:
+            from YOLOv7 import YOLOv7
+            self.mih = YOLOv7(options)
+        else:
+            print(f"No architecture named {options.architecture} found.")
+            exit()
+
         self.annotVer = AnnotationVerifier()
         print("Innit done")
 
     # Process, predict and save predictions systematically
     def Process(self):
-        self.modelInfHandler.Detect()
+        self.mih.Detect()
 
         if(not self.opt.no_verify):
-            self.annotVer.annot_verifier(self.opt.source, str(self.modelInfHandler.save_dir))
-        
+            self.annotVer.annot_verifier(self.opt.source, str(self.mih.save_dir))
+
 
 # Get user arguments/inputs
 def Parsing():
@@ -47,6 +54,7 @@ def Parsing():
     parser.add_argument('--show-details', action='store_true', help='show detection details')
     parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work on per thread')
     parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
+    parser.add_argument('--architecture', type=str, default='yolov7', help='architecture used')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
