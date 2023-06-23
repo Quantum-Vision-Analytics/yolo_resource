@@ -1,7 +1,9 @@
 import os 
+import sys
+import cv2
 import shutil
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton, QFileDialog, QListWidgetItem, QInputDialog,QSpinBox, QSlider
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 import subprocess
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout,QLayout
@@ -14,11 +16,13 @@ class Window(QWidget):
 
         # Resim seçimi için QLabel ve QPushButton
         self.image_label = QLabel(self)
+        self.detection_result = QLabel(self)
         self.choose_image_button = QPushButton('Choose Image', self)
      
        
         # Parametrelerini seçme ve Algılama 
         self.detect_button = QPushButton('Detection', self)
+        self.detected = False
         self.label_batchsize = QLabel('Batch-Size: ')
         self.spinbox_batchsize = QSpinBox()
         self.spinbox_batchsize.setValue(20)
@@ -73,7 +77,8 @@ class Window(QWidget):
         # hbox1.addWidget(self.model_text)
 
         # Resim seçimi için QLabel ve QPushButton
-        vbox1.addWidget(self.image_label)
+        hbox1.addWidget(self.image_label)
+        hbox1.addWidget(self.detection_result)
         vbox1.addWidget(self.choose_image_button)
 
         hbox2.addWidget(self.previous_button)
@@ -96,9 +101,9 @@ class Window(QWidget):
         # Model seçimi için QPushButton
         # vbox2.addWidget(self.choose_model_button)
 
-        # Resim ve etiket listeleri için QListWidget
+        # Resim listeleri için QListWidget
         vbox1.addWidget(self.image_list_widget)
-        # vbox2.addWidget(self.label_list_widget)
+    
 
         # Widget'ların yerleştirilmesi
         vbox2.addLayout(hbox1)
@@ -112,7 +117,7 @@ class Window(QWidget):
 
         # Pencere boyutlandırma
         self.setGeometry(100, 100, 800, 600)
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(1600, 800)
 
         # Düğmelere işlevsellik eklemek
         self.choose_image_button.clicked.connect(self.choose_image)
@@ -167,20 +172,95 @@ class Window(QWidget):
             self.selected_image_files = file_names
             self.current_image_index = 0
             self.load_image(file_names[self.current_image_index])
-       
+
     def load_image(self, file_path):
-        pixmap = QPixmap(file_path)
+        image = cv2.imread(file_path)
+        height, width, _ = image.shape
+        label_width = 800  # Hedef genişlik
+        label_height = 600  # Hedef yükseklik
+
+        aspect_ratio = width / height
+        if aspect_ratio > label_width / label_height:
+            scaled_width = label_width
+            scaled_height = int(label_width / aspect_ratio)
+        else:
+            scaled_height = label_height
+            scaled_width = int(label_height * aspect_ratio)
+        resized_image = cv2.resize(image, (scaled_width, scaled_height))
+
+        
+        rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
+        qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(qimage)
         self.image_label.setPixmap(pixmap)
 
     def next_image(self):
         if self.current_image_index + 1 < len(self.selected_image_files):
             self.current_image_index += 1
             self.load_image(self.selected_image_files[self.current_image_index])
+        if self.detected == True:
+            self.define_annotation_image()
+            self.load_annotation()
+            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
 
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
             self.load_image(self.selected_image_files[self.current_image_index])
+        if self.detected == True:
+            self.define_annotation_image()
+            self.load_annotation()
+            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+    
+    def load_annotation(self):
+
+        directory = "detections"
+        find_last_detections = os.listdir(directory)[-1]
+        last_detections_folder = directory+'\\'+find_last_detections
+        file_names = os.listdir(last_detections_folder)
+        
+        file_names.remove("classes.txt")
+                
+        
+        self.selected_annotation_file = last_detections_folder + '\\' +file_names[self.current_image_index]
+
+    def draw_bounding_boxes(self, image_path, annotations_path):
+        # Resmi yükle
+        image = cv2.imread(image_path)
+        height, width, _ = image.shape
+
+        # Bounding box verilerini oku ve çiz
+        with open(annotations_path, 'r') as file:
+            for line in file:
+                data = line.split()
+                class_id = int(data[0])
+                x = int((float(data[1]) - (float(data[3]) / 2)) * width)
+                y = int((float(data[2]) - (float(data[4]) / 2)) * height)
+                w = int(float(data[3]) * width)
+                h = int(float(data[4]) * height)
+
+                # Bounding box çiz
+                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        # Resmi uygun boyuta yeniden boyutlandır
+        label_width = 800  # Hedef genişlik
+        label_height = 600  # Hedef yükseklik
+        aspect_ratio = width / height
+        if aspect_ratio > label_width / label_height:
+            scaled_width = label_width
+            scaled_height = int(label_width / aspect_ratio)
+        else:
+            scaled_height = label_height
+            scaled_width = int(label_height * aspect_ratio)
+        resized_image = cv2.resize(image, (scaled_width, scaled_height))
+
+        # Resmi PyQt5 uyumlu bir formata dönüştür
+        rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
+        qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(qimage)
+
+        self.detection_result.setPixmap(pixmap)
+
 
     # def choose_model(self):
     #     items = ['yolo', 'resnet', 'centernet']  # Örnek etiketler
@@ -198,11 +278,21 @@ class Window(QWidget):
         print(source)
         thread_count = str(self.spinbox_batchsize.value())
         batch_size = str(self.spinbox_batchsize.value())
-        
-        command = 'python Auto_Annotator.py --architecture yolov7 --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf 0.25 --iou-thres 0.4 --img-size 384 --source '+source+' --save-txt --no-trace --nosave --device 0'
-        subprocess.Popen(command, shell=True)
 
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
+        
+        command = 'python Auto_Annotator.py --architecture yolov7 --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf 0.25 --iou-thres 0.4 --img-size 384 --source '+source+' --save-txt --no-trace --nosave --device 0 --no-verify'
+        process = subprocess.Popen(command, shell=True)
+        process.wait()
+        
+        if process.returncode == 0:
+            self.detected = True
+        
+        
+        if self.detected == True:
+            self.define_annotation_image()
+            self.load_annotation()
+            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
     
     def edit(self):
         
@@ -215,18 +305,22 @@ class Window(QWidget):
         subprocess.run(['python', 'QVA_GUI\exportButton.py'])
         QMessageBox.information(self, 'Bilgi', 'Export işlemi tamamlandı. COCOval2017 verisetinin Coco formatlı instance dosyası yolo formatlı olarak exported klasörüne çıktı alınmıştır.')
         
-    
+    def define_annotation_image(self):
+        self.current_file = self.selected_image_files[self.current_image_index]
+        self.current_file = self.current_file.replace("/","\\")  
+
     def verify(self):
         if not os.path.isdir("verified"):
             os.mkdir("verified")
         else:
             current_dir = os.getcwd()
             dst_dir= os.path.join(current_dir,"verified")
-            current_file = self.selected_image_files[self.current_image_index]
-            current_file = current_file.replace("/","\\")  
-        
-            shutil.copy(current_file, dst_dir)
-            print(current_file)
+            self.define_annotation_image()
+            self.load_annotation()
+            shutil.copy(self.current_file, dst_dir)
+            shutil.copy(self.selected_annotation_file, dst_dir)
+            print(self.current_file)
+            print(self.selected_annotation_file)
         
         
         
