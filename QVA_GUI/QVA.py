@@ -155,6 +155,11 @@ class Window(QWidget):
             self.load_images_from_directory(directory)
             self.list_images(directory)
             self.folder_selected = True
+            # if self.detected == True:    
+            #     self.detection_result.clear()
+            # self.detected = False
+            # self.current_image_index = 0
+            
             
 
     def load_images_from_directory(self, directory):
@@ -216,13 +221,13 @@ class Window(QWidget):
 
         directory = "detections"
         find_last_detections = os.listdir(directory)[-1]
-        last_detections_folder = directory+'\\'+find_last_detections
-        file_names = os.listdir(last_detections_folder)
+        self.last_detections_folder = directory+'\\'+find_last_detections
+        file_names = os.listdir(self.last_detections_folder)
         
         file_names.remove("classes.txt")
                 
         
-        self.selected_annotation_file = last_detections_folder + '\\' +file_names[self.current_image_index]
+        self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
@@ -272,16 +277,16 @@ class Window(QWidget):
 
     def detect(self):
         
-        source_dir = self.selected_image_directory
-        substring = "C:/Python Projects/yolo_resource/"
-        source = source_dir.replace(substring,"")
+        directory = self.selected_image_directory
+        current_directory = os.getcwd()
+        source = os.path.relpath(directory, current_directory)
         print(source)
         thread_count = str(self.spinbox_batchsize.value())
         batch_size = str(self.spinbox_batchsize.value())
 
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
         
-        command = 'python Auto_Annotator.py --architecture yolov7 --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf 0.25 --iou-thres 0.4 --img-size 384 --source '+source+' --save-txt --no-trace --nosave --device 0 --no-verify'
+        command = 'python Auto_Annotator.py --architecture yolov7 --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf 0.25 --iou-thres 0.4 --img-size 384 --source '+source+' --save-txt --no-trace --nosave --device 0'
         process = subprocess.Popen(command, shell=True)
         process.wait()
         
@@ -296,9 +301,17 @@ class Window(QWidget):
     
     def edit(self):
         
-        subprocess.run(['python', "labelImg/labelimg.py"])
-        # subprocess.run(['python', "labelImg/labelimg.py " + self.img_path + " " + self.label_path])
+        directory = self.selected_image_directory
+        current_directory = os.getcwd()
+        images = os.path.relpath(directory, current_directory)
 
+        directory = "detections"
+        find_last_detections = os.listdir(directory)[-1]
+        annotations = directory+'\\'+find_last_detections
+        print(images)
+        print(annotations)
+        
+        os.system("python labelImg\labelImg.py "+ images + " " + annotations)
     
     def export(self):
         
