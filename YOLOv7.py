@@ -40,7 +40,7 @@ class YOLOv7(ModelInferenceHandler):
         # Initialize
         set_logging()
         self.device = select_device(self.opt.device)
-        self.half = self.opt.half_precision if self.device.type != 'cpu' else False # half precision only supported on CUDA
+        self.half = self.device.type != 'cpu' #self.opt.half_precision if self.device.type != 'cpu' else False # half precision only supported on CUDA
 
         # Load model
         self.model = attempt_load(weights, map_location=self.device)  # load FP32 model
@@ -97,18 +97,6 @@ class YOLOv7(ModelInferenceHandler):
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
             if img.ndimension() == 3:
                 img = img.unsqueeze(0)
-            batch[x] = (path, img, im0s, vid_cap)
-            x += 1
-            #return (path, img, im0s, vid_cap)
-        return batch
-
-    # Object detection and classification
-    def Predict(self, batch:list):
-        #self.preds = [] # List of coordinates and class keys of predictions/labels
-        x = 0
-        for path, img, im0s, vid_cap in batch:
-            #path, img, im0s, vid_cap = data
-            timelap = [0] * 3
 
             # Warmup
             if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
@@ -117,6 +105,39 @@ class YOLOv7(ModelInferenceHandler):
                 self.old_img_w = img.shape[3]
                 for i in range(3):
                     self.model(img, augment=self.opt.augment)[0]
+
+            batch[x] = (path, img, im0s, vid_cap)
+            x += 1
+            #return (path, img, im0s, vid_cap)
+        return batch
+
+    # Object detection and classification
+    def preproc(self, img):
+        img = torch.from_numpy(img).to(self.device)
+        img = img.half() if self.half else img.float()  # uint8 to fp16/32
+        img /= 255.0  # 0 - 255 to 0.0 - 1.0
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
+
+        # Warmup
+        if self.device.type != 'cpu' and \
+                (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
+            self.old_img_b = img.shape[0]
+            self.old_img_h = img.shape[2]
+            self.old_img_w = img.shape[3]
+            for i in range(3):
+                self.model(img, augment=self.opt.augment)[0]
+
+        return img
+
+    def Predict(self, batch:list):
+        #self.preds = [] # List of coordinates and class keys of predictions/labels
+        x = 0
+        for path, img, im0s, vid_cap in batch:
+            #path, img, im0s, vid_cap = data
+            img = self.preproc(img)
+            timelap = [0] * 3
+
 
             # Inference
             timelap[0] = time_synchronized()

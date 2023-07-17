@@ -23,15 +23,18 @@ class ModelInferenceHandler(abc.ABC):
                 # Get a batch from queue and lock the queue object at that time
                 self.lock.acquire()
                 batch = self.batchQueue.pop(0)
+                print("batch start")
                 self.lock.release()
 
                 # Process the batch
                 with torch.no_grad():
-                    batch = self.Preprocess(batch)
+                    #batch = self.Preprocess(batch)
                     batch = self.Predict(batch)
-                    self.Postprocess(batch) 
+                    self.Postprocess(batch)
+                print("batch finish")
             else:
                 time.sleep(self.sleep_time) # Add random interval
+        print("while is finsihed")
 
     @abc.abstractmethod
     def Train(self):
