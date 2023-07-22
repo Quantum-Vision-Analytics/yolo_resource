@@ -115,7 +115,9 @@ class Export:
                     "<height>" + str(df_smaller.loc[index]["img_height"]) + "</height>"
                 )
                 depth_text = (
-                    "<depth>" + str(df_smaller.loc[index]["img_depth"]) + "</depth>"
+                    "<depth>" 
+                    + str(df_smaller.loc[index]["img_depth"]) 
+                    + "</depth>" if df_smaller.loc[index]["img_depth"] else ""
                 )
                 size_text_end = "</size>"
 
@@ -206,14 +208,14 @@ class Export:
                     + size_text_start
                     + width_text
                     + height_text
-                    + IsEmpty(depth_text)
+                    + depth_text
                     + size_text_end
                     + segmented_text
                     + object_text_start
                     + name_text
-                    + IsEmpty(pose_text)
-                    + IsEmpty(truncated_text)
-                    + IsEmpty(difficult_text)
+                    + pose_text
+                    + truncated_text
+                    + difficult_text
                     + occluded_text
                     + bound_box_text_start
                     + xmin_text
@@ -293,7 +295,7 @@ class Export:
                     + size_text_start
                     + width_text
                     + height_text
-                    + IsEmpty(depth_text)
+                    + depth_text
                     + size_text_end
                     + segmented_text
                 )
@@ -301,10 +303,10 @@ class Export:
                 for obj in range(len(df_smaller)):
                     object_text_start = "<object>"
 
-                    print("2")
-                    print(str(df_smaller.loc[obj]["ann_pose"]))
-                    print(str(df_smaller.loc[obj]["ann_truncated"]))
-                    print(str(df_smaller.loc[obj]["ann_difficult"]))
+                    # print("2")
+                    # print(str(df_smaller.loc[obj]["ann_pose"]))
+                    # print(str(df_smaller.loc[obj]["ann_truncated"]))
+                    # print(str(df_smaller.loc[obj]["ann_difficult"]))
 
                     name_text = (
                         "<name>" + str(df_smaller.loc[obj]["cat_name"]) + "</name>"
@@ -316,7 +318,7 @@ class Export:
                     )
                     truncated_text = (
                         "<truncated>" + str(df_smaller.loc[obj]["ann_truncated"])
-                        + "</truncated>" if df_smaller.loc[obj]["ann_trincated"] else ""
+                        + "</truncated>" if df_smaller.loc[obj]["ann_truncated"] else ""
                     )
                     difficult_text = (
                         "<difficult>" + str(df_smaller.loc[obj]["ann_difficult"])
@@ -361,9 +363,9 @@ class Export:
                         xmlstring
                         + object_text_start
                         + name_text
-                        + IsEmpty(pose_text)
-                        + IsEmpty(truncated_text)
-                        + IsEmpty(difficult_text)
+                        + pose_text
+                        + truncated_text
+                        + difficult_text
                         + occluded_text
                         + bound_box_text_start
                         + xmin_text

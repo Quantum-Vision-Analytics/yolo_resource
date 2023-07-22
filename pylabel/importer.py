@@ -301,7 +301,7 @@ def ImportYoloV5(
 
     # iterate over files in that directory
     for filename in os.scandir(path):
-        if filename.is_file() and filename.name.endswith(".txt"):
+        if filename.is_file() and filename.name.endswith(".txt") and filename.name != "classes.txt":
             filepath = filename.path
             file = open(filepath, "r")  # Read file
             row = {}
