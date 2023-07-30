@@ -338,23 +338,30 @@ class MainWindow(QWidget):
 
     def load_image(self, file_path):
         image = cv2.imread(file_path)
-        height, width, _ = image.shape
-        label_width = 800  # Hedef genişlik
-        label_height = 600 # Hedef yükseklik
+        # height, width, _ = image.shape
+        # label_width = 800  # Hedef genişlik
+        # label_height = 600  # Hedef yükseklik
+        #
+        # aspect_ratio = width / height
+        # if aspect_ratio > label_width / label_height:
+        #     scaled_width = label_width
+        #     scaled_height = int(label_width / aspect_ratio)
+        # else:
+        #     scaled_height = label_height
+        #     scaled_width = int(label_height * aspect_ratio)
+        # resized_image = cv2.resize(image, (scaled_width, scaled_height))
+        #
+        # rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
+        scale_percent = 60  # percent of original size
+        width = int(image.shape[1] * scale_percent / 100)
+        height = int(image.shape[0] * scale_percent / 100)
+        dim = (width, height)
 
-        aspect_ratio = width / height
-        if aspect_ratio > label_width / label_height:
-            scaled_width = label_width
-            scaled_height = int(label_width / aspect_ratio)
-        else:
-            scaled_height = label_height
-            scaled_width = int(label_height * aspect_ratio)
-        resized_image = cv2.resize(image, (scaled_width, scaled_height))
-
-        
-        rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
-        qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimage)
+        # resize image
+        resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+        rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        q_image = QImage(rgb_image.data, width, height, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_image)
         self.image_label.setPixmap(pixmap)
 
     def next_image(self):
