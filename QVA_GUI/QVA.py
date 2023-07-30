@@ -17,7 +17,7 @@ class ProjectWindow(QWidget):
         self.init_ui()
         self.setGeometry(100, 100, 1600, 800)
         # self.setMinimumSize(1600, 800)
-        icon = QIcon('QVA_GUI\logo.png')
+        icon = QIcon('logo.png')
         self.setWindowIcon(icon)
         self.list_projects()
 
@@ -186,8 +186,8 @@ class MainWindow(QWidget):
         self.previous_button = QPushButton('Previous', self)
         self.previous_button.setGeometry(10, 460, 90, 30)
         self.close_project_button = QPushButton('Projeyi kapat')
-        
-        icon = QIcon('QVA_GUI\logo.png')
+
+        icon = QIcon('logo.png')
         self.setWindowIcon(icon)
         self.load_exist_images()
         self.load_exist_annotations()
