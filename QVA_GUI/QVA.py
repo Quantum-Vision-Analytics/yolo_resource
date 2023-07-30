@@ -24,6 +24,8 @@ class ProjectWindow(QWidget):
     def init_ui(self):
         self.setWindowTitle('İlk Ekran')
         self.projects_dir = "Projects"
+        if not os.path.exists(self.projects_dir):
+            os.makedirs(self.projects_dir)
         layout = QVBoxLayout()
         self.label = QLabel('Bu birinci ekran')
         layout.addWidget(self.label)
@@ -309,7 +311,7 @@ class MainWindow(QWidget):
                 
     
     def load_exist_annotations(self):
-        if os.listdir(self.current_dir+"\\annotations"):
+        if os.listdir(self.current_dir+"\\annotations") and os.path.exists('classes.txt'):
             self.define_annotation_image()
             directory = self.path_to_annotations
             find_last_detections = os.listdir(directory)[-1]
@@ -438,7 +440,7 @@ class MainWindow(QWidget):
         print(targetClassesText)
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
         
-        command = 'python Auto_Annotator.py --project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+' --no-trace --nosave --no-verify --device '+deviceText
+        command = 'python ../Auto_Annotator.py --project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+' --no-trace --nosave --no-verify --device '+deviceText
         process = subprocess.Popen(command, shell=True)
         process.wait()
         if process.returncode == 0:
