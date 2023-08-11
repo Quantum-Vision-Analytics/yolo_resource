@@ -1,5 +1,10 @@
-import os 
+import os
 import sys
+cwd = os.getcwd()
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(cwd))
+
+
 import cv2
 import shutil
 import json
@@ -11,6 +16,12 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout,QLayout
 sys.path.append(os.getcwd())
 from pylabel.importer import ImportYoloV5
 import warnings
+import torch
+
+from Auto_Annotator import Auto_Annotator
+from quantum_auto_annot_arguments import Quantum_AA_Arguments
+from utils.general import strip_optimizer
+
 
 class ProjectWindow(QWidget):
     def __init__(self):
@@ -135,12 +146,12 @@ class MainWindow(QWidget):
 
         self.label_batchsize = QLabel('Batch-Size: ')
         self.spinbox_batchsize = QSpinBox()
-        self.spinbox_batchsize.setValue(20)
+        self.spinbox_batchsize.setValue(500)
         self.spinbox_batchsize.setMaximum(5000)
 
         self.label_thread = QLabel('Thread: ')
         self.spinbox_thread = QSpinBox()
-        self.spinbox_thread.setValue(2)
+        self.spinbox_thread.setValue(1)
 
         self.label_threshold = QLabel('Conf-Threshold: ')
         self.threshold_bar = QDoubleSpinBox()
@@ -431,7 +442,17 @@ class MainWindow(QWidget):
         qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qimage)
         self.detection_result.setPixmap(pixmap)
-
+    def execute_auto_annotator(self, kwargs):
+        qaaa = Quantum_AA_Arguments(kwargs)
+        opt_cmd = qaaa.generate_arguments()
+        aa = Auto_Annotator(opt_cmd)
+        with torch.no_grad():
+            if opt_cmd.update:  # update all models (to fix SourceChangeWarning)
+                for opt_cmd.weights in ['yolov7.pt']:
+                    aa.Process()
+                    strip_optimizer(opt_cmd.weights)
+            else:
+                aa.Process()
     def detect(self):
         
         directory = self.selected_image_directory
@@ -451,11 +472,16 @@ class MainWindow(QWidget):
         print(targetClassesText)
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
         
-        command = 'python ../Auto_Annotator.py --project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+' --no-trace --nosave --no-verify --device '+deviceText
-        process = subprocess.Popen(command, shell=True)
-        process.wait()
-        if process.returncode == 0:
-            self.annotationCheck = True 
+        kwargs= ('--project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+
+                   ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
+                   ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
+                   ' --no-trace --nosave --no-verify --device '+deviceText)
+        self.execute_auto_annotator(kwargs)
+        # command = 'python ../Auto_Annotator.py --project ' + annotations_dir + ' --architecture ' + architecture + ' --thread-count ' + thread_count + ' --batch-size ' + batch_size + ' --weights yolov7-e6e.pt --conf-thres ' + conf_threshold + ' --iou-thres 0.4 --img-size ' + imgsize + ' --source ' + source + ' --save-txt ' + targetClassesText + ' --no-trace --nosave --no-verify --device ' + deviceText
+        # process = subprocess.Popen(command, shell=True)
+        # process.wait()
+        # if process.returncode == 0:
+        self.annotationCheck = True
 
         if self.annotationCheck == True:
             self.define_annotation_image()
