@@ -10,6 +10,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout,QLayout
 sys.path.append(os.getcwd())
 from pylabel.importer import ImportYoloV5
+import warnings
 
 class ProjectWindow(QWidget):
     def __init__(self):
@@ -311,16 +312,19 @@ class MainWindow(QWidget):
                 
     
     def load_exist_annotations(self):
-        if os.listdir(self.current_dir+"\\annotations") and os.path.exists('classes.txt'):
-            self.define_annotation_image()
-            directory = self.path_to_annotations
-            find_last_detections = os.listdir(directory)[-1]
-            self.last_detections_folder = directory+'\\'+find_last_detections
-            file_names = os.listdir(self.last_detections_folder)
-            file_names.remove("classes.txt")
-            self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
-            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
-            self.annotationCheck = True 
+        if os.path.isdir(self.current_dir+"\\annotations"):
+            if os.listdir(self.current_dir+"\\annotations") and os.path.exists('classes.txt'):
+                self.define_annotation_image()
+                directory = self.path_to_annotations
+                find_last_detections = os.listdir(directory)[-1]
+                self.last_detections_folder = directory+'\\'+find_last_detections
+                file_names = os.listdir(self.last_detections_folder)
+                file_names.remove("classes.txt")
+                self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+                self.annotationCheck = True
+        else:
+            warnings.warn("there is no annotations generated. please run detection first to create annoations")
 
     def load_images_from_directory(self, directory):
         file_names = []
