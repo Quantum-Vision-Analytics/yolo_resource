@@ -2,9 +2,9 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QListWidget, QPushButton, QListWidgetItem
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5.QtWidgets import QApplication
-import os
 
+import os
+from quantum_main_window import MainWindow
 class OpeningWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -81,8 +81,3 @@ class OpeningWindow(QWidget):
         self.main_window.show()
         self.hide()
 
-if __name__ == '__main__':
-    app = QApplication([])
-    window = OpeningWindow()
-    window.show()
-    app.exec_()
