@@ -438,7 +438,7 @@ class MainWindow(QWidget):
         print(targetClassesText)
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
         
-        command = 'python Auto_Annotator.py --project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+' --no-trace --nosave --no-verify --device '+deviceText
+        command = 'python ../Auto_Annotator.py --project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+' --no-trace --nosave --no-verify --device '+deviceText
         process = subprocess.Popen(command, shell=True)
         process.wait()
         if process.returncode == 0:
