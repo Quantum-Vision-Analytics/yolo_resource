@@ -1,118 +1,42 @@
+import cv2
+import shutil
+import json
+
+
+from pylabel.importer import ImportYoloV5
+import warnings
+import torch
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QLayout
+from PyQt5.QtGui import QPixmap, QImage
+
+from PyQt5.QtWidgets import QWidget, QLabel, QListWidget, QMessageBox, QPushButton, QFileDialog, QListWidgetItem, QInputDialog,QSpinBox, QDoubleSpinBox, QComboBox
+
+
 import os
 import sys
 cwd = os.getcwd()
 sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(cwd))
 
-
-import cv2
-import shutil
-import json
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QListWidget, QMessageBox, QPushButton, QFileDialog, QListWidgetItem, QInputDialog,QSpinBox, QDoubleSpinBox, QComboBox
-from PyQt5.QtGui import QPixmap, QImage
-import subprocess
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout,QLayout
-sys.path.append(os.getcwd())
-from pylabel.importer import ImportYoloV5
-import warnings
-import torch
-
 from Auto_Annotator import Auto_Annotator
 from quantum_auto_annot_arguments import Quantum_AA_Arguments
 from utils.general import strip_optimizer
 
 
-class ProjectWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-        self.setGeometry(100, 100, 1600, 800)
-        # self.setMinimumSize(1600, 800)
-        icon = QIcon('logo.png')
-        self.setWindowIcon(icon)
-        self.list_projects()
 
-    def init_ui(self):
-        self.setWindowTitle('İlk Ekran')
-        self.projects_dir = "Projects"
-        if not os.path.exists(self.projects_dir):
-            os.makedirs(self.projects_dir)
-        layout = QVBoxLayout()
-        self.label = QLabel('Bu birinci ekran')
-        layout.addWidget(self.label)
-
-        self.label_project = QLabel("Project Name: ")
-        layout.addWidget(self.label_project)
-
-        self.project_name = QLineEdit(self)
-        layout.addWidget(self.project_name)
-        
-        button1 = QPushButton('Proje Oluştur')
-        button1.clicked.connect(self.create_project)
-        layout.addWidget(button1)
-
-        self.projects_list = QListWidget(self)
-        layout.addWidget(self.projects_list)
-        self.projects_list.itemDoubleClicked.connect(self.on_item_double_clicked)
-        
-
-        self.setLayout(layout)
-
-    def create_project(self):
-        
-        if self.projects_dir:
-            
-            self.project_directory = os.path.join(self.projects_dir, self.project_name.text())
-            os.makedirs(self.project_directory)
-            verify_dir = self.project_directory+"\\verified"
-            images_dir = self.project_directory+"\\images"
-            annotations_dir = self.project_directory+"\\annotations"
-            exported_dir = self.project_directory+"\\exported"
-            os.mkdir(verify_dir)
-            os.mkdir(images_dir)
-            os.mkdir(annotations_dir)
-            os.mkdir(exported_dir)
-
-            os.chdir(self.project_directory)
-            self.open_main_window(self.project_directory)
-            os.chdir("../../")
-        
-
-    def list_projects(self):
-        if self.projects_dir:
-            self.projects_list.clear()
-            for filename in os.listdir(self.projects_dir):
-                    item = QListWidgetItem(filename)
-                    self.projects_list.addItem(item)
-
-    def on_item_double_clicked(self, item):
-        # Çift tıklanan öğenin metnini alıyoruz
-        self.project_name = item.text()
-        
-        # Mesaj kutusuyla çift tıklanan öğenin metnini gösteriyoruz
-        # QMessageBox.information(self, "Çift Tıklama", f"Çift tıklanan öğe: {clicked_item_text}")
-        self.project_directory = os.path.join(self.projects_dir, self.project_name)
-        os.chdir(self.project_directory)
-        self.open_main_window(self.project_directory)
-        os.chdir("../../")
-
-    def open_main_window(self, project_directory):
-        self.main_window = MainWindow(project_directory)
-        self.main_window.show()
-        self.hide()
 
 class MainWindow(QWidget):
     def __init__(self, project_directory):
         super().__init__()
-        
+
         self.project_directory = project_directory
         self.current_dir = os.getcwd()
         self.project_name = self.project_directory.split("\\")[-1]
         self.path_to_annotations = self.current_dir+"\\annotations"
-        #Identify the path to get from the annotations to the images 
+        #Identify the path to get from the annotations to the images
         self.path_to_images = self.current_dir + "\\images"
-        
+
 
         self.yolo_dir = self.current_dir +"\\exported\\labels_yolo"
         self.voc_dir = self.current_dir +"\\exported\\labels_voc"
@@ -127,7 +51,7 @@ class MainWindow(QWidget):
         'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
         'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
         'hair drier', 'toothbrush']
-        
+
         # Pencere boyutlandırma
         self.setGeometry(100, 100, 1600, 800)
         # self.setMinimumSize(1600, 800)
@@ -139,8 +63,8 @@ class MainWindow(QWidget):
         # model seçimi için QLabel ve QLineEdit
         # self.model_label = QLabel('Model:', self)
         # self.model_text = QLineEdit(self)
-       
-        # Parametrelerini seçme ve Algılama 
+
+        # Parametrelerini seçme ve Algılama
         self.detect_button = QPushButton('Detection', self)
         self.annotationCheck = False
 
@@ -164,16 +88,16 @@ class MainWindow(QWidget):
         self.comboBox_imgsize = QComboBox()
         self.comboBox_imgsize.addItems(["384", "640", "1024"])
         self.comboBox_imgsize.setCurrentIndex(1)
-        
+
         self.label_architecture = QLabel('Architecture: ')
         self.comboBox_architecture =  QComboBox()
         self.comboBox_architecture.addItems(["Yolo", "ResNet", "Centernet"])
-        
+
         self.label_targetClasses = QLabel('Target Class: ')
         self.comboBox_targetClasses =  QComboBox()
         self.comboBox_targetClasses.addItems([""])
         self.comboBox_targetClasses.addItems(self.yoloclasses)
-    
+
         self.label_device = QLabel("Device: ")
         self.comboBox_device = QComboBox()
         self.comboBox_device.addItems(["GPU","CPU"])
@@ -204,9 +128,9 @@ class MainWindow(QWidget):
         self.load_exist_images()
         self.load_exist_annotations()
         self.initUI()
-        
 
-        
+
+
     def initUI(self):
         vbox1 = QVBoxLayout()
         vbox2 = QVBoxLayout()
@@ -223,7 +147,7 @@ class MainWindow(QWidget):
 
         hbox2.addWidget(self.previous_button)
         hbox2.addWidget(self.next_button)
-        
+
         # Algılama için QPushButton
         hbox3.addWidget(self.label_architecture)
         hbox3.addWidget(self.comboBox_architecture)
@@ -239,8 +163,8 @@ class MainWindow(QWidget):
         hbox3.addWidget(self.comboBox_targetClasses)
         hbox3.addWidget(self.label_device)
         hbox3.addWidget(self.comboBox_device)
-        
-        
+
+
         hbox3.addWidget(self.detect_button)
 
         # düzenleme için QPushButton
@@ -252,13 +176,13 @@ class MainWindow(QWidget):
 
         # Doğrulama için QPushButton
         hbox2.addWidget(self.verify_button)
-        
+
         # Model seçimi için QPushButton
         # vbox2.addWidget(self.choose_model_button)
 
         # Resim listeleri için QListWidget
         vbox1.addWidget(self.image_list_widget)
-    
+
 
         # Widget'ların yerleştirilmesi
         vbox2.addLayout(hbox1)
@@ -266,7 +190,7 @@ class MainWindow(QWidget):
         vbox2.addLayout(hbox2)
         vbox2.addLayout(hbox3)
         vbox2.addLayout(hbox4)
-        
+
         # Ana layout oluşturma
         self.setLayout(vbox2)
 
@@ -280,20 +204,20 @@ class MainWindow(QWidget):
         self.next_button.clicked.connect(self.next_image)
         self.previous_button.clicked.connect(self.previous_image)
         self.verify_button.clicked.connect(self.verify)
-        
+
         self.close_project_button.clicked.connect(self.close_project)
-        
+
         # # Pencere ayarları
         self.setWindowTitle('QVA-AutoAnnotator')
         self.show()
-        
+
     def close_project(self):
         self.window = ProjectWindow()
         self.window.show()
         self.hide()
-        
+
     def list_images(self,directory):
-        
+
         if directory:
             self.image_list_widget.clear()
             for filename in os.listdir(directory):
@@ -302,9 +226,9 @@ class MainWindow(QWidget):
                     self.image_list_widget.addItem(item)
 
     def choose_image(self):
-        
+
         directory = QFileDialog.getExistingDirectory(self, "Resim Klasörünü Seç","")
-        
+
         if not os.listdir(self.path_to_images):
 
             files = os.listdir(directory)
@@ -319,9 +243,9 @@ class MainWindow(QWidget):
         if os.listdir(self.path_to_images):
             self.selected_image_directory = self.path_to_images
             self.load_images_from_directory(self.path_to_images)
-            self.list_images(self.path_to_images)   
-                
-    
+            self.list_images(self.path_to_images)
+
+
     def load_exist_annotations(self):
         if os.path.isdir(self.current_dir+"\\annotations"):
             if os.listdir(self.current_dir+"\\annotations") and os.path.exists('classes.txt'):
@@ -341,11 +265,11 @@ class MainWindow(QWidget):
         file_names = []
         # valid_extensions = ['.jpg', '.jpeg', '.png']
         self.current_image_index = 0
-        
+
         for file_name in os.listdir(directory):
             if os.path.splitext(file_name)[1].lower(): #in valid_extensions:
                 file_names.append(os.path.join(directory, file_name))
-        
+
         if file_names:
             self.selected_image_files = file_names
             self.current_image_index = 0
@@ -396,14 +320,14 @@ class MainWindow(QWidget):
             self.define_annotation_image()
             self.load_annotation()
             self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
-    
+
     def load_annotation(self):
 
         directory = self.project_directory+"\\annotations"
         find_last_detections = os.listdir(directory)[-1]
         self.last_detections_folder = directory+'\\'+find_last_detections
         file_names = os.listdir(self.last_detections_folder)
-        
+
         file_names.remove("classes.txt")
         self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
 
@@ -454,7 +378,7 @@ class MainWindow(QWidget):
             else:
                 aa.Process()
     def detect(self):
-        
+
         directory = self.selected_image_directory
         current_directory = os.getcwd()
         source = os.path.relpath(directory, current_directory)
@@ -471,7 +395,7 @@ class MainWindow(QWidget):
         annotations_dir = self.project_directory +"\\annotations"
         print(targetClassesText)
         QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
-        
+
         kwargs= ('--project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+
                    ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
                    ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
@@ -487,11 +411,11 @@ class MainWindow(QWidget):
             self.define_annotation_image()
             self.load_annotation()
             self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
-            
-            
-    
+
+
+
     def edit(self):
-        
+
         directory = self.selected_image_directory
         current_directory = os.getcwd()
         images = os.path.relpath(directory, current_directory)
@@ -501,20 +425,20 @@ class MainWindow(QWidget):
         annotations = directory+'\\'+find_last_detections
         print(images)
         print(annotations)
-        
+
         os.system("python labelImg\labelImg.py "+ images + " " + annotations)
-    
+
     def ClassesTxtFileGenerator(self, exportPath:str):
-       
+
        with open(self.path_to_annotations,"r") as fr:
            data = json.loads(fr.read())
            classes_dict = data['categories']
-           
+
            with open(exportPath+"\\classes.txt","w") as fw:
                i = 0
                x = 0
                fw.writelines("names:\n")
-               
+
                while i < classes_dict[-1]['id']:
                    if i +1 == classes_dict[x]['id']:
                        fw.writelines(classes_dict[x]['name']+"\n")
@@ -525,14 +449,14 @@ class MainWindow(QWidget):
                        i += 1
            fw.close()
        fr.close()
-    
+
     def ExportYoloLabels(self, exportPath:str):
         if not os.path.isdir(exportPath):
             os.mkdir(exportPath)
 
         self.dataset.export.ExportToYoloV5(output_path = exportPath)[0]
         # self.ClassesTxtFileGenerator(exportPath = exportPath)
-    
+
 
     def ExportVocLabels(self, exportPath:str):
 
@@ -548,7 +472,7 @@ class MainWindow(QWidget):
 
         self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
         self.dataset.path_to_annotations = self.current_dir+"\\annotations"
-    
+
     def export(self):
         self.last_detections_path = self.path_to_annotations +"\\"+ os.listdir(self.path_to_annotations)[-1]
         self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.path_to_images, cat_names= self.yoloclasses, img_ext="jpg,jpeg,png,webp")
@@ -560,10 +484,10 @@ class MainWindow(QWidget):
         elif exportValue == "Yolo":
             self.ExportYoloLabels(exportPath = self.yolo_dir)
         QMessageBox.information(self, 'Bilgi', 'Export işlemi tamamlandı.')
-        
+
     def define_annotation_image(self):
         self.current_file = self.selected_image_files[self.current_image_index]
-        self.current_file = self.current_file.replace("/","\\")  
+        self.current_file = self.current_file.replace("/","\\")
 
     def verify(self):
         verify_dir = self.project_directory + "\\verified"
@@ -578,8 +502,4 @@ class MainWindow(QWidget):
         
         
         
-if __name__ == '__main__':
-    app = QApplication([])
-    window = ProjectWindow()
-    window.show()
-    app.exec_()
+
