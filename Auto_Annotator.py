@@ -12,6 +12,11 @@ class Auto_Annotator:
         if arc_opt in ["yolov7","yolo","yolo7"]:
             from YOLOv7 import YOLOv7
             self.mih = YOLOv7(options)
+
+        elif arc_opt in ["fasterrcnn","retinanet","fcos","ssd300"]:
+            from Pytorch_Models import Pytorch_Models
+            self.mih = Pytorch_Models(options,arc_opt)
+
         else:
             print(f"No architecture named {options.architecture} found.")
             exit()
@@ -54,7 +59,7 @@ def Parsing():
     parser.add_argument('--show-details', action='store_true', help='show detection details')
     parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work on per thread')
     parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
-    parser.add_argument('--architecture', type=str, default='yolov7', help='architecture used')
+    parser.add_argument('--architecture', type=str, default='yolov7', help='the architecture to use')
     return parser.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 

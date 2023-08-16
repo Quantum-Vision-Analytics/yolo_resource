@@ -18,7 +18,8 @@ class ModelInferenceHandler(abc.ABC):
     def ThreadWork(self, initWait:int):
         time.sleep(initWait)
         # Continue until all images are read into batches and the queue is empty
-        while(self.batchQueue or self.ongoing):
+        # data_remained was ongoing
+        while(self.batchQueue or self.data_remained):
             # Wait for the lock
             if self.batchQueue and not self.lock.locked():
                 # Get a batch from queue and lock the queue object at that time

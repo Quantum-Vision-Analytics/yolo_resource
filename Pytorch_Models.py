@@ -7,6 +7,8 @@ from pathlib import Path
 from os.path import splitext
 from FileGenerator import FileGenerator
 import threading
+import os
+import glob
 from ModelInferenceHandler import ModelInferenceHandler
 from torchvision.models.detection import(
             fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights,
@@ -19,9 +21,9 @@ class Pytorch_Models(ModelInferenceHandler):
         super().__init__(options)
         self.model_name = model_name
 
-    def LoadResources(self,save_img=False):
-        source, weights, self.view_img, self.save_txt, imgsz, trace = self.opt.source, self.opt.weights, self.opt.view_img, self.opt.save_txt, self.opt.img_size, not self.opt.no_trace
-        self.save_img = save_img; self.save_img = not self.opt.nosave and not source.endswith('.txt')  # save inference images
+    def LoadResources(self):
+        self.source, self.view_img, self.save_txt = self.opt.source, self.opt.view_img, self.opt.save_txt
+        self.save_img = not self.opt.nosave and not self.source.endswith('.txt')  # save inference images
 
         # Define a dictionary mapping model names to their functions and weights
         models_info = {
@@ -47,50 +49,59 @@ class Pytorch_Models(ModelInferenceHandler):
 
     def Preprocess(self, batch:list):
         # Dimensions of the image, [width,height]
-        # dim_list = [[len(im[0][0]), len(im[0])] for im in batch] if isinstance(batch, list) else [[len(batch[0][0]), len(batch[0])]]
         dim_list = [[len(im[0][0]), len(im[0])] for im in batch]
-        print(dim_list)
         # Process images and returns the output with dimensions
         return (dim_list,[self.preprocess(im) for im in batch])
-        # return (dim_list,[self.preprocess(im) for im in batch] if isinstance(batch, list) else [batch])
 
     def Predict(self, batch:list):
-        #print(batch)
-        return [self.model(im)[0] for im in batch]
+        return [self.model([im])[0] for im in batch]
 
     def Postprocess(self, batch:list, dimensions:list, img_names:list):
         for prediction, img_dims, img_name in zip(batch, dimensions, img_names):
-            print(img_dims)
-            print(img_name)
-            print(prediction)
             with open(splitext(img_name)[0] + ".txt", "w") as f:
-                # for label, bb in zip(list(batch["labels"]), list(batch["boxes"])):
                 for label, bb in zip(list(prediction["labels"]), list(prediction["boxes"])):
                     org_bb = bb.detach().cpu().numpy()
                     output = "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label.item(), (org_bb[0] + org_bb[2])/2/img_dims[0], (org_bb[1] + org_bb[3])/2/img_dims[1], abs(org_bb[2] - org_bb[0])/img_dims[0], abs(org_bb[3] - org_bb[1])/img_dims[1])
-                    #print(output)
-                    print(f"{label.item()} {org_bb[0]} {org_bb[1]} {org_bb[2]} {org_bb[3]}")
+                    #print(f"{label.item()} {org_bb[0]} {org_bb[1]} {org_bb[2]} {org_bb[3]}")
                     f.write(output)
-
-        with open("classes.txt", "w") as f:
+                    
+        with open("val2017\classes.txt", "w") as f:
             for x in self.weights.meta["categories"]:
-                if not x.startswith("_"):
-                    f.write(x + "\n")
+                f.write(x + "\n")
 
     def Detect(self):
         self.LoadResources()
 
-        img_name = "val2017/000000000139.jpg"
-        img_name2 = "val2017/000000000632.jpg"
-        img_names = [img_name]
-        img = read_image(img_name)
-        img2 = read_image(img_name2)
-        batch = [img, img2]
-        batch2 = [img]
+        # img_name = "val2017/000000000139.jpg"
+        # img_name2 = "val2017/000000000632.jpg"
+        # img_names = [img_name, img_name2]
+        # img_names2 = [img_name]
+        # img = read_image(img_name)
+        # img2 = read_image(img_name2)
+        # batch = [img, img2]
+        # batch2 = [img]
 
-        dims, batch = self.Preprocess(batch2)
-        batch = self.Predict(batch)
-        self.Postprocess(batch, dims, img_names)
+        # dims, batch = self.Preprocess(batch)
+        # batch = self.Predict(batch)
+        # self.Postprocess(batch, dims, img_names)
+
+        # Supported image types
+        img_formats = ['jpg', 'jpeg', 'png']
+
+        abs_pos = str(Path(self.source).absolute())
+        if os.path.isdir(self.source):
+            file_names = sorted(glob.glob(os.path.join(abs_pos, '*.*')))  # dir
+        elif os.path.isfile(self.source):
+            file_names = [self.source]  # files
+        files = [x for x in file_names if x.split('.')[-1].lower() in img_formats]
+
+        for img_name in files:
+            batch = [read_image(img_name)]
+            image_names = [img_name]
+
+            dims, batch = self.Preprocess(batch)
+            batch = self.Predict(batch)
+            self.Postprocess(batch, dims, image_names)
 
         # Step 3: Apply inference preprocessing transforms
         #batch = [self.preprocess(img)]
@@ -118,19 +129,3 @@ class Pytorch_Models(ModelInferenceHandler):
 
     def Train(self):
         pass
-
-"""
-box = draw_bounding_boxes(img, boxes=prediction["boxes"],
-                          labels=labels,
-                          colors="red",
-                          width=4, font_size=30)
-print("Bounding boxes")
-print(prediction["boxes"])
-print("Labels")
-print(prediction["labels"])
-im = to_pil_image(box.detach())
-im.show()
-"""
-# print("///")
-# print(prediction["boxes"])
-# print(prediction["labels"])
