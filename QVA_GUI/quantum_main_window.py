@@ -22,13 +22,13 @@ sys.path.append(os.path.dirname(cwd))
 from Auto_Annotator import Auto_Annotator
 from quantum_auto_annot_arguments import Quantum_AA_Arguments
 from utils.general import strip_optimizer
-
+from qt_gui_elements import QtGuiElements
 
 valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp","webp"]
 
-class MainWindow(QWidget):
+class MainWindow():
     def __init__(self, project_directory):
-        super().__init__()
+
 
         self.project_directory = project_directory
         self.current_dir = os.getcwd()
@@ -52,84 +52,15 @@ class MainWindow(QWidget):
         'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
         'hair drier', 'toothbrush']
 
-        # Pencere boyutlandırma
-        self.setGeometry(100, 100, 1600, 800)
-        # self.setMinimumSize(1600, 800)
 
-        # Resim seçimi için QLabel ve QPushButton
-        self.image_label = QLabel(self)
-        self.detection_result = QLabel(self)
-        self.choose_image_button = QPushButton('Choose Image', self)
-        # model seçimi için QLabel ve QLineEdit
-        # self.model_label = QLabel('Model:', self)
-        # self.model_text = QLineEdit(self)
-
-        # Parametrelerini seçme ve Algılama
-        self.detect_button = QPushButton('Detection', self)
         self.annotationCheck = False
-        self.create_and_initiate_gui_elements()
+
 
 
         self.load_exist_images()
         self.load_exist_annotations()
-        self.initUI()
-    def create_and_initiate_gui_elements(self):
-        self.label_batchsize = QLabel('Batch-Size: ')
-        self.spinbox_batchsize = QSpinBox()
-        self.spinbox_batchsize.setValue(500)
-        self.spinbox_batchsize.setMaximum(5000)
+        self.qui_els = QtGuiElements()
 
-        self.label_thread = QLabel('Thread: ')
-        self.spinbox_thread = QSpinBox()
-        self.spinbox_thread.setValue(1)
-
-        self.label_threshold = QLabel('Conf-Threshold: ')
-        self.threshold_bar = QDoubleSpinBox()
-        self.threshold_bar.setMinimum(0)
-        self.threshold_bar.setMaximum(1)
-        self.threshold_bar.setValue(0.25)
-        self.threshold_bar.setSingleStep(0.05)
-
-        self.label_imgsize = QLabel('Image-Size: ')
-        self.comboBox_imgsize = QComboBox()
-        self.comboBox_imgsize.addItems(["384", "640", "1024"])
-        self.comboBox_imgsize.setCurrentIndex(1)
-
-        self.label_architecture = QLabel('Architecture: ')
-        self.comboBox_architecture = QComboBox()
-        self.comboBox_architecture.addItems(["Yolo", "ResNet", "Centernet"])
-
-        self.label_targetClasses = QLabel('Target Class: ')
-        self.comboBox_targetClasses = QComboBox()
-        self.comboBox_targetClasses.addItems([""])
-        self.comboBox_targetClasses.addItems(self.yoloclasses)
-
-        self.label_device = QLabel("Device: ")
-        self.comboBox_device = QComboBox()
-        self.comboBox_device.addItems(["GPU", "CPU"])
-
-        self.label_export = QLabel('Export As: ')
-        self.comboBox_export = QComboBox()
-        self.comboBox_export.addItems(["PascalVoc", "Coco", "Yolo"])
-        # düzenleme için QPushButton
-        self.edit_button = QPushButton('Edit by labelImg', self)
-        # Veri ihracı için QPushButton
-        self.export_button = QPushButton('Export', self)
-        # Doğrulama için QPushButton
-        self.verify_button = QPushButton('Verify', self)
-        # Model seçimi için QPushButton
-        # self.choose_model_button = QPushButton('Choose Model', self)
-        # Resim ve etiket listeleri için QListWidget
-        self.image_list_widget = QListWidget(self)
-        # self.label_list_widget = QListWidget(self)
-        self.next_button = QPushButton('Next', self)
-        self.next_button.setGeometry(120, 460, 90, 30)
-        self.previous_button = QPushButton('Previous', self)
-        self.previous_button.setGeometry(10, 460, 90, 30)
-        self.close_project_button = QPushButton('Projeyi kapat')
-
-        icon = QIcon('logo.png')
-        self.setWindowIcon(icon)
 
 
     def initUI(self):
@@ -268,7 +199,8 @@ class MainWindow(QWidget):
         self.current_image_index = 0
 
         for file_name in os.listdir(directory):
-            if os.path.splitext(file_name)[1].lower() in valid_extensions:
+            extension = file_name.rsplit(".",1)[1].lower()
+            if extension in valid_extensions:
                 file_names.append(os.path.join(directory, file_name))
 
         if file_names:
@@ -278,20 +210,6 @@ class MainWindow(QWidget):
 
     def load_image(self, file_path):
         image = cv2.imread(file_path)
-        # height, width, _ = image.shape
-        # label_width = 800  # Hedef genişlik
-        # label_height = 600  # Hedef yükseklik
-        #
-        # aspect_ratio = width / height
-        # if aspect_ratio > label_width / label_height:
-        #     scaled_width = label_width
-        #     scaled_height = int(label_width / aspect_ratio)
-        # else:
-        #     scaled_height = label_height
-        #     scaled_width = int(label_height * aspect_ratio)
-        # resized_image = cv2.resize(image, (scaled_width, scaled_height))
-        #
-        # rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
         scale_percent = 60  # percent of original size
         width = int(image.shape[1] * scale_percent / 100)
         height = int(image.shape[0] * scale_percent / 100)
