@@ -78,6 +78,6 @@ class OpeningWindow(QWidget):
 
     def open_main_window(self, project_directory):
         self.main_window = MainWindow(project_directory)
-        self.main_window.show()
+        self.main_window.gui_els.show()
         self.hide()
 
