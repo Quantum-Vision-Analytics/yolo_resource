@@ -3,10 +3,11 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QLayout
 from PyQt5.QtGui import QPixmap, QImage
 
 from PyQt5.QtWidgets import QWidget, QLabel, QListWidget, QMessageBox, QPushButton, QFileDialog, QListWidgetItem, QInputDialog,QSpinBox, QDoubleSpinBox, QComboBox
-
+from fixed_long_values import yoloclasses
 class QtGuiElements(QWidget):
     def __init__(self):
         super().__init__()
+        self.yoloclasses = yoloclasses
         # Pencere boyutlandırma
         self.setGeometry(100, 100, 1600, 800)
         # self.setMinimumSize(1600, 800)
@@ -22,6 +23,74 @@ class QtGuiElements(QWidget):
         # Parametrelerini seçme ve Algılama
         self.detect_button = QPushButton('Detection', self)
         self.initUI()
+    def initUI(self):
+        vbox1 = QVBoxLayout()
+        vbox2 = QVBoxLayout()
+        hbox1 = QHBoxLayout()
+        hbox2 = QHBoxLayout()
+        hbox3 = QHBoxLayout()
+        hbox4 = QHBoxLayout()
+
+        # Resim seçimi için QLabel ve QPushButton
+        hbox1.addWidget(self.image_label)
+        hbox1.addWidget(self.detection_result)
+        vbox1.addWidget(self.choose_image_button)
+        vbox1.addWidget(self.close_project_button)
+
+        hbox2.addWidget(self.previous_button)
+        hbox2.addWidget(self.next_button)
+
+        # Algılama için QPushButton
+        hbox3.addWidget(self.label_architecture)
+        hbox3.addWidget(self.comboBox_architecture)
+        hbox3.addWidget(self.label_imgsize)
+        hbox3.addWidget(self.comboBox_imgsize)
+        hbox3.addWidget(self.label_threshold)
+        hbox3.addWidget(self.threshold_bar)
+        hbox3.addWidget(self.label_thread)
+        hbox3.addWidget(self.spinbox_thread)
+        hbox3.addWidget(self.label_batchsize)
+        hbox3.addWidget(self.spinbox_batchsize)
+        hbox3.addWidget(self.label_targetClasses)
+        hbox3.addWidget(self.comboBox_targetClasses)
+        hbox3.addWidget(self.label_device)
+        hbox3.addWidget(self.comboBox_device)
+
+
+        hbox3.addWidget(self.detect_button)
+
+        # düzenleme için QPushButton
+        hbox4.addWidget(self.edit_button)
+        # Veri ihracı için QPushButton
+        hbox4.addWidget(self.label_export)
+        hbox4.addWidget(self.comboBox_export)
+        hbox4.addWidget(self.export_button)
+
+        # Doğrulama için QPushButton
+        hbox2.addWidget(self.verify_button)
+
+        # Model seçimi için QPushButton
+        # vbox2.addWidget(self.choose_model_button)
+
+        # Resim listeleri için QListWidget
+        vbox1.addWidget(self.image_list_widget)
+
+
+        # Widget'ların yerleştirilmesi
+        vbox2.addLayout(hbox1)
+        vbox2.addLayout(vbox1)
+        vbox2.addLayout(hbox2)
+        vbox2.addLayout(hbox3)
+        vbox2.addLayout(hbox4)
+
+        # Ana layout oluşturma
+        self.setLayout(vbox2)
+
+
+
+        # # Pencere ayarları
+        self.setWindowTitle('QVA-AutoAnnotator')
+        self.show()
 
     def create_and_initiate_gui_elements(self):
         self.label_batchsize = QLabel('Batch-Size: ')
