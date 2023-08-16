@@ -25,6 +25,9 @@ from utils.general import strip_optimizer
 from qt_gui_elements import QtGuiElements
 
 valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp","webp"]
+def check_is_image_file(file_name):
+    extension = file_name.rsplit(".", 1)[1].lower()
+    return extension in valid_extensions
 
 class MainWindow():
     def __init__(self, project_directory):
@@ -42,120 +45,41 @@ class MainWindow():
         self.voc_dir = self.current_dir +"\\exported\\labels_voc"
         self.coco_dir = self.current_dir +"\\exported\\labels_coco"
 
-        self.yoloclasses = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-        'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-        'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-        'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-        'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-        'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
-        'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
-        'hair drier', 'toothbrush']
+
 
 
         self.annotationCheck = False
 
-
-
+        self.gui_els = QtGuiElements()
+        self.connect_gui_elements_to_functions()
         self.load_exist_images()
         self.load_exist_annotations()
-        self.qui_els = QtGuiElements()
-
-
-
-    def initUI(self):
-        vbox1 = QVBoxLayout()
-        vbox2 = QVBoxLayout()
-        hbox1 = QHBoxLayout()
-        hbox2 = QHBoxLayout()
-        hbox3 = QHBoxLayout()
-        hbox4 = QHBoxLayout()
-
-        # Resim seçimi için QLabel ve QPushButton
-        hbox1.addWidget(self.image_label)
-        hbox1.addWidget(self.detection_result)
-        vbox1.addWidget(self.choose_image_button)
-        vbox1.addWidget(self.close_project_button)
-
-        hbox2.addWidget(self.previous_button)
-        hbox2.addWidget(self.next_button)
-
-        # Algılama için QPushButton
-        hbox3.addWidget(self.label_architecture)
-        hbox3.addWidget(self.comboBox_architecture)
-        hbox3.addWidget(self.label_imgsize)
-        hbox3.addWidget(self.comboBox_imgsize)
-        hbox3.addWidget(self.label_threshold)
-        hbox3.addWidget(self.threshold_bar)
-        hbox3.addWidget(self.label_thread)
-        hbox3.addWidget(self.spinbox_thread)
-        hbox3.addWidget(self.label_batchsize)
-        hbox3.addWidget(self.spinbox_batchsize)
-        hbox3.addWidget(self.label_targetClasses)
-        hbox3.addWidget(self.comboBox_targetClasses)
-        hbox3.addWidget(self.label_device)
-        hbox3.addWidget(self.comboBox_device)
-
-
-        hbox3.addWidget(self.detect_button)
-
-        # düzenleme için QPushButton
-        hbox4.addWidget(self.edit_button)
-        # Veri ihracı için QPushButton
-        hbox4.addWidget(self.label_export)
-        hbox4.addWidget(self.comboBox_export)
-        hbox4.addWidget(self.export_button)
-
-        # Doğrulama için QPushButton
-        hbox2.addWidget(self.verify_button)
-
-        # Model seçimi için QPushButton
-        # vbox2.addWidget(self.choose_model_button)
-
-        # Resim listeleri için QListWidget
-        vbox1.addWidget(self.image_list_widget)
-
-
-        # Widget'ların yerleştirilmesi
-        vbox2.addLayout(hbox1)
-        vbox2.addLayout(vbox1)
-        vbox2.addLayout(hbox2)
-        vbox2.addLayout(hbox3)
-        vbox2.addLayout(hbox4)
-
-        # Ana layout oluşturma
-        self.setLayout(vbox2)
-
+    def connect_gui_elements_to_functions(self):
         # Düğmelere işlevsellik eklemek
-        self.choose_image_button.clicked.connect(self.choose_image)
+        self.gui_els.choose_image_button.clicked.connect(self.choose_image)
         # self.choose_label_button.clicked.connect(self.choose_label)
-        self.detect_button.clicked.connect(self.detect)
+        self.gui_els.detect_button.clicked.connect(self.detect)
         # self.choose_model_button.clicked.connect(self.choose_model)
-        self.edit_button.clicked.connect(self.edit)
-        self.export_button.clicked.connect(self.export)
-        self.next_button.clicked.connect(self.next_image)
-        self.previous_button.clicked.connect(self.previous_image)
-        self.verify_button.clicked.connect(self.verify)
+        self.gui_els.edit_button.clicked.connect(self.edit)
+        self.gui_els.export_button.clicked.connect(self.export)
+        self.gui_els.next_button.clicked.connect(self.next_image)
+        self.gui_els.previous_button.clicked.connect(self.previous_image)
+        self.gui_els.verify_button.clicked.connect(self.verify)
 
-        self.close_project_button.clicked.connect(self.close_project)
-
-        # # Pencere ayarları
-        self.setWindowTitle('QVA-AutoAnnotator')
-        self.show()
+        self.gui_els.close_project_button.clicked.connect(self.close_project)
 
     def close_project(self):
         self.window = ProjectWindow()
         self.window.show()
         self.hide()
-
     def list_images(self,directory):
 
         if directory:
-            self.image_list_widget.clear()
+            self.gui_els.image_list_widget.clear()
             for filename in os.listdir(directory):
-                if filename.endswith('.jpg') or filename.endswith('.png'):
+                if check_is_image_file(filename):
                     item = QListWidgetItem(filename)
-                    self.image_list_widget.addItem(item)
+                    self.gui_els.image_list_widget.addItem(item)
 
     def choose_image(self):
 
@@ -180,7 +104,7 @@ class MainWindow():
 
     def load_exist_annotations(self):
         if os.path.isdir(self.current_dir+"\\annotations"):
-            if os.listdir(self.current_dir+"\\annotations") and os.path.exists('classes.txt'):
+            if os.path.exists('classes.txt'):
                 self.define_annotation_image()
                 directory = self.path_to_annotations
                 find_last_detections = os.listdir(directory)[-1]
@@ -199,8 +123,7 @@ class MainWindow():
         self.current_image_index = 0
 
         for file_name in os.listdir(directory):
-            extension = file_name.rsplit(".",1)[1].lower()
-            if extension in valid_extensions:
+            if check_is_image_file(file_name):
                 file_names.append(os.path.join(directory, file_name))
 
         if file_names:
@@ -220,7 +143,7 @@ class MainWindow():
         rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         q_image = QImage(rgb_image.data, width, height, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_image)
-        self.image_label.setPixmap(pixmap)
+        self.gui_els.image_label.setPixmap(pixmap)
 
     def next_image(self):
         if self.current_image_index + 1 < len(self.selected_image_files):
