@@ -24,7 +24,7 @@ from quantum_auto_annot_arguments import Quantum_AA_Arguments
 from utils.general import strip_optimizer
 
 
-
+valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp","webp"]
 
 class MainWindow(QWidget):
     def __init__(self, project_directory):
@@ -67,7 +67,13 @@ class MainWindow(QWidget):
         # Parametrelerini seçme ve Algılama
         self.detect_button = QPushButton('Detection', self)
         self.annotationCheck = False
+        self.create_and_initiate_gui_elements()
 
+
+        self.load_exist_images()
+        self.load_exist_annotations()
+        self.initUI()
+    def create_and_initiate_gui_elements(self):
         self.label_batchsize = QLabel('Batch-Size: ')
         self.spinbox_batchsize = QSpinBox()
         self.spinbox_batchsize.setValue(500)
@@ -90,22 +96,21 @@ class MainWindow(QWidget):
         self.comboBox_imgsize.setCurrentIndex(1)
 
         self.label_architecture = QLabel('Architecture: ')
-        self.comboBox_architecture =  QComboBox()
+        self.comboBox_architecture = QComboBox()
         self.comboBox_architecture.addItems(["Yolo", "ResNet", "Centernet"])
 
         self.label_targetClasses = QLabel('Target Class: ')
-        self.comboBox_targetClasses =  QComboBox()
+        self.comboBox_targetClasses = QComboBox()
         self.comboBox_targetClasses.addItems([""])
         self.comboBox_targetClasses.addItems(self.yoloclasses)
 
         self.label_device = QLabel("Device: ")
         self.comboBox_device = QComboBox()
-        self.comboBox_device.addItems(["GPU","CPU"])
+        self.comboBox_device.addItems(["GPU", "CPU"])
 
         self.label_export = QLabel('Export As: ')
-        self.comboBox_export =  QComboBox()
+        self.comboBox_export = QComboBox()
         self.comboBox_export.addItems(["PascalVoc", "Coco", "Yolo"])
-
         # düzenleme için QPushButton
         self.edit_button = QPushButton('Edit by labelImg', self)
         # Veri ihracı için QPushButton
@@ -125,10 +130,6 @@ class MainWindow(QWidget):
 
         icon = QIcon('logo.png')
         self.setWindowIcon(icon)
-        self.load_exist_images()
-        self.load_exist_annotations()
-        self.initUI()
-
 
 
     def initUI(self):
@@ -267,7 +268,7 @@ class MainWindow(QWidget):
         self.current_image_index = 0
 
         for file_name in os.listdir(directory):
-            if os.path.splitext(file_name)[1].lower(): #in valid_extensions:
+            if os.path.splitext(file_name)[1].lower() in valid_extensions:
                 file_names.append(os.path.join(directory, file_name))
 
         if file_names:
