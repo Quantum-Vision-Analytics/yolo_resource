@@ -36,9 +36,9 @@ class MainWindow():
         self.project_directory = project_directory
         self.current_dir = os.getcwd()
         self.project_name = self.project_directory.split("\\")[-1]
-        self.path_to_annotations = self.current_dir+"\\annotations"
+        self.annot_path = self.current_dir + "\\annotations"
         #Identify the path to get from the annotations to the images
-        self.path_to_images = self.current_dir + "\\images"
+        self.img_path = self.current_dir + "\\images"
 
 
         self.yolo_dir = self.current_dir +"\\exported\\labels_yolo"
@@ -85,28 +85,28 @@ class MainWindow():
 
         directory = QFileDialog.getExistingDirectory(self, "Resim Klasörünü Seç","")
 
-        if not os.listdir(self.path_to_images):
+        if not os.listdir(self.img_path):
 
             files = os.listdir(directory)
             for file in files :
-                shutil.copy2(os.path.join(directory,file), self.path_to_images)
+                shutil.copy2(os.path.join(directory,file), self.img_path)
 
-            self.selected_image_directory = self.path_to_images
-            self.load_images_from_directory(self.path_to_images)
-            self.list_images(self.path_to_images)
+            self.selected_image_directory = self.img_path
+            self.load_images_from_directory(self.img_path)
+            self.list_images(self.img_path)
 
     def load_exist_images(self):
-        if os.listdir(self.path_to_images):
-            self.selected_image_directory = self.path_to_images
-            self.load_images_from_directory(self.path_to_images)
-            self.list_images(self.path_to_images)
+        if os.listdir(self.img_path):
+            self.selected_image_directory = self.img_path
+            self.load_images_from_directory(self.img_path)
+            self.list_images(self.img_path)
 
 
     def load_exist_annotations(self):
-        if os.path.isdir(self.current_dir+"\\annotations"):
+        if os.path.isdir(self.annot_path):
             if os.path.exists('classes.txt'):
                 self.define_annotation_image()
-                directory = self.path_to_annotations
+                directory = self.annot_path
                 find_last_detections = os.listdir(directory)[-1]
                 self.last_detections_folder = directory+'\\'+find_last_detections
                 file_names = os.listdir(self.last_detections_folder)
@@ -272,7 +272,7 @@ class MainWindow():
 
     def ClassesTxtFileGenerator(self, exportPath:str):
 
-       with open(self.path_to_annotations,"r") as fr:
+       with open(self.annot_path, "r") as fr:
            data = json.loads(fr.read())
            classes_dict = data['categories']
 
@@ -308,16 +308,16 @@ class MainWindow():
         self.dataset.export.ExportToVoc(output_path = exportPath)[0]
 
     def ExportCocoLabels(self, exportPath:str):
-        self.dataset.path_to_annotations = self.coco_dir
+        self.dataset.annot_path = self.coco_dir
         if os.path.isdir(exportPath) == False:
             os.mkdir(exportPath)
 
         self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
-        self.dataset.path_to_annotations = self.current_dir+"\\annotations"
+        self.dataset.annot_path = self.current_dir + "\\annotations"
 
     def export(self):
-        self.last_detections_path = self.path_to_annotations +"\\"+ os.listdir(self.path_to_annotations)[-1]
-        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.path_to_images, cat_names= self.yoloclasses, img_ext="jpg,jpeg,png,webp")
+        self.last_detections_path = self.annot_path + "\\" + os.listdir(self.annot_path)[-1]
+        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.yoloclasses, img_ext="jpg,jpeg,png,webp")
         exportValue = str(self.comboBox_export.currentText())
         if exportValue == "PascalVoc":
             self.ExportVocLabels(exportPath = self.voc_dir)
