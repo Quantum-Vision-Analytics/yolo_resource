@@ -23,8 +23,9 @@ from Auto_Annotator import Auto_Annotator
 from quantum_auto_annot_arguments import Quantum_AA_Arguments
 from utils.general import strip_optimizer
 from qt_gui_elements import QtGuiElements
+from pathlib import Path
 
-valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp","webp"]
+valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp"]
 def check_is_image_file(file_name):
     extension = file_name.rsplit(".", 1)[1].lower()
     return extension in valid_extensions
@@ -33,21 +34,16 @@ class MainWindow():
     def __init__(self, project_directory):
 
 
-        self.project_directory = project_directory
-        self.current_dir = os.getcwd()
-        self.project_name = self.project_directory.split("\\")[-1]
-        self.annot_path = self.current_dir + "\\annotations"
+        self.project_directory = Path(project_directory)
+        self.current_dir = Path(os.getcwd())
+        self.project_name = self.project_directory.name
+        self.annot_path = self.current_dir / "annotations"
         #Identify the path to get from the annotations to the images
-        self.img_path = self.current_dir + "\\images"
+        self.img_path = self.current_dir / "images"
 
-
-        self.yolo_dir = self.current_dir +"\\exported\\labels_yolo"
-        self.voc_dir = self.current_dir +"\\exported\\labels_voc"
-        self.coco_dir = self.current_dir +"\\exported\\labels_coco"
-
-
-
-
+        self.yolo_dir = self.current_dir / "exported\\labels_yolo"
+        self.voc_dir = self.current_dir / "exported\\labels_voc"
+        self.coco_dir = self.current_dir / "exported\\labels_coco"
         self.annotationCheck = False
 
         self.gui_els = QtGuiElements()
@@ -104,14 +100,16 @@ class MainWindow():
 
     def load_exist_annotations(self):
         if os.path.isdir(self.annot_path):
-            if os.path.exists('classes.txt'):
+            recent_proj_path = os.listdir(self.annot_path)[-1]
+            class_txt_path = self.annot_path / recent_proj_path / 'classes.txt'
+            if os.path.exists(class_txt_path):
                 self.define_annotation_image()
                 directory = self.annot_path
                 find_last_detections = os.listdir(directory)[-1]
-                self.last_detections_folder = directory+'\\'+find_last_detections
+                self.last_detections_folder = directory / find_last_detections
                 file_names = os.listdir(self.last_detections_folder)
                 file_names.remove("classes.txt")
-                self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
+                self.selected_annotation_file = self.last_detections_folder / file_names[self.current_image_index]
                 self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 self.annotationCheck = True
         else:
@@ -207,7 +205,7 @@ class MainWindow():
         rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
         qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qimage)
-        self.detection_result.setPixmap(pixmap)
+        self.gui_els.detection_result.setPixmap(pixmap)
     def execute_auto_annotator(self, kwargs):
         qaaa = Quantum_AA_Arguments(kwargs)
         opt_cmd = qaaa.generate_arguments()
