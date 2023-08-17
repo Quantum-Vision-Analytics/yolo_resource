@@ -136,20 +136,21 @@ class MainWindow():
             self.sel_imgs = file_names
             self.current_image_index = 0
             self.load_image(file_names[self.current_image_index])
-
-    def load_image(self, file_path):
-        image = cv2.imread(file_path)
+    def create_qimage_from_opencv(self, opencv_img):
         scale_percent = 60  # percent of original size
-        nchannel = image.shape[2]
-        width = int(image.shape[1] * scale_percent / 100)
-        height = int(image.shape[0] * scale_percent / 100)
+        nchannel = opencv_img.shape[2]
+        width = int(opencv_img.shape[1] * scale_percent / 100)
+        height = int(opencv_img.shape[0] * scale_percent / 100)
         dim = (width, height)
         bytes_per_line = width * nchannel
         # resize image
-        resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+        resized = cv2.resize(opencv_img, dim, interpolation=cv2.INTER_AREA)
         rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
         q_image = QImage(rgb_image.data, width, height, bytes_per_line, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(q_image)
+        return QPixmap.fromImage(q_image)
+    def load_image(self, file_path):
+        image = cv2.imread(file_path)
+        pixmap = self.create_qimage_from_opencv(image)
         self.gui_els.image_label.setPixmap(pixmap)
 
     def next_image(self):
@@ -197,22 +198,7 @@ class MainWindow():
                 # Bounding box çiz
                 cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # Resmi uygun boyuta yeniden boyutlandır
-        label_width = 800  # Hedef genişlik
-        label_height = 600  # Hedef yükseklik
-        aspect_ratio = width / height
-        if aspect_ratio > label_width / label_height:
-            scaled_width = label_width
-            scaled_height = int(label_width / aspect_ratio)
-        else:
-            scaled_height = label_height
-            scaled_width = int(label_height * aspect_ratio)
-        resized_image = cv2.resize(image, (scaled_width, scaled_height))
-
-        # Resmi PyQt5 uyumlu bir formata dönüştür
-        rgb_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
-        qimage = QImage(rgb_image.data, scaled_width, scaled_height, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimage)
+        pixmap = self.create_qimage_from_opencv(image)
         self.gui_els.detection_result.setPixmap(pixmap)
     def execute_auto_annotator(self, kwargs):
         qaaa = Quantum_AA_Arguments(kwargs)
@@ -268,9 +254,9 @@ class MainWindow():
         current_directory = os.getcwd()
         images = os.path.relpath(directory, current_directory)
 
-        directory = self.project_directory+"\\annotations"
+        directory = self.project_directory / "annotations"
         find_last_detections = os.listdir(directory)[-1]
-        annotations = directory+'\\'+find_last_detections
+        annotations = str(directory / find_last_detections)
         print(images)
         print(annotations)
 
@@ -338,15 +324,19 @@ class MainWindow():
         self.current_file = self.current_file.replace("/","\\")
 
     def verify(self):
-        verify_dir = self.project_directory + "\\verified"
+        verify_dir = self.project_directory / "verified"
         current_dir = os.getcwd()
         dst_dir= os.path.join(current_dir,verify_dir)
         self.define_annotation_image()
         self.load_annotation()
-        shutil.copy(self.current_file, dst_dir)
-        shutil.copy(self.selected_annotation_file, dst_dir)
-        print(self.current_file)
-        print(self.selected_annotation_file)
+        if self.current_file and self.selected_annotation_file:
+            shutil.copy(self.current_file, dst_dir)
+            shutil.copy(self.selected_annotation_file, dst_dir)
+            print(self.current_file)
+            print(self.selected_annotation_file)
+        else:
+            warnings.warn("there is no annotations generated. you can only verify images with their annotations")
+
         
         
         
