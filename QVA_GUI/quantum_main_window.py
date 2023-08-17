@@ -94,7 +94,13 @@ class MainWindow():
             self.load_images_from_directory(self.img_path)
             self.list_images(self.img_path)
 
-
+    def find_annot_file(self, img_name):
+        img_name = Path(img_name)
+        name_to_search = img_name.stem
+        for annot in self.sel_anns:
+            if name_to_search in annot:
+                return annot
+        return None
     def load_exist_annotations(self):
         annot_path_list = os.listdir(self.annot_path)
         if annot_path_list:
@@ -107,8 +113,12 @@ class MainWindow():
                 self.last_detections_folder = directory / find_last_detections
                 file_names = os.listdir(self.last_detections_folder)
                 file_names.remove("classes.txt")
-                self.selected_annotation_file = self.last_detections_folder / file_names[self.current_image_index]
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+                self.sel_anns = file_names
+                image_name = self.sel_imgs[self.current_image_index]
+                ann_fname = self.find_annot_file(image_name)
+                if ann_fname is not None:
+                    self.selected_annotation_file = self.last_detections_folder / ann_fname
+                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 self.annotationCheck = True
         else:
             warnings.warn("there is no annotations generated. please run detection first to create annoations")
@@ -130,14 +140,15 @@ class MainWindow():
     def load_image(self, file_path):
         image = cv2.imread(file_path)
         scale_percent = 60  # percent of original size
+        nchannel = image.shape[2]
         width = int(image.shape[1] * scale_percent / 100)
         height = int(image.shape[0] * scale_percent / 100)
         dim = (width, height)
-
+        bytes_per_line = width * nchannel
         # resize image
         resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
         rgb_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
-        q_image = QImage(rgb_image.data, width, height, QImage.Format_RGB888)
+        q_image = QImage(rgb_image.data, width, height, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_image)
         self.gui_els.image_label.setPixmap(pixmap)
 
@@ -145,10 +156,12 @@ class MainWindow():
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
             self.load_image(self.sel_imgs[self.current_image_index])
-        if self.annotationCheck == True:
-            self.define_annotation_image()
-            self.load_annotation()
-            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+
+            if self.annotationCheck == True:
+                self.define_annotation_image()
+                self.load_annotation()
+                if self.selected_annotation_file:
+                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
 
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
@@ -157,17 +170,14 @@ class MainWindow():
         if self.annotationCheck == True:
             self.define_annotation_image()
             self.load_annotation()
-            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            if self.selected_annotation_file:
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
 
     def load_annotation(self):
 
-        directory = self.annot_path
-        find_last_detections = os.listdir(directory)[-1]
-        self.last_detections_folder = directory / find_last_detections
-        file_names = os.listdir(self.last_detections_folder)
-
-        file_names.remove("classes.txt")
-        self.selected_annotation_file = self.last_detections_folder  / file_names[self.current_image_index]
+        image_name = self.sel_imgs[self.current_image_index]
+        annot_file = self.find_annot_file(image_name)
+        self.selected_annotation_file = self.last_detections_folder  / annot_file if annot_file is not None else None
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
