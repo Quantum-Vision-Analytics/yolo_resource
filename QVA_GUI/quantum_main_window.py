@@ -223,7 +223,7 @@ class MainWindow():
         imgsize = str(self.gui_els.comboBox_imgsize.currentText())
         architecture = str(self.gui_els.comboBox_architecture.currentText())
         targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
-        targetClassesText = "--classes \"" + str(self.gui_els.comboBox_targetClasses.currentText())+ "\"" if targetClasses != "" else ""
+        targetClassesText = '--classes ' + str(self.gui_els.comboBox_targetClasses.currentText()) if targetClasses != "" else ""
         deviceText = "0" if str(self.gui_els.comboBox_device.currentText()) == "GPU" else "cpu"
 
         annotations_dir = self.annot_path.__str__()
@@ -244,7 +244,8 @@ class MainWindow():
         if self.annotationCheck == True:
             self.define_annotation_image()
             self.load_annotation()
-            self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            if self.selected_annotation_file:
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
 
 
 
