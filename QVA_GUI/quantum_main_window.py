@@ -45,6 +45,8 @@ class MainWindow():
         self.voc_dir = self.current_dir / "exported\\labels_voc"
         self.coco_dir = self.current_dir / "exported\\labels_coco"
         self.annotationCheck = False
+        self.sel_imgs = [] # to hold img files
+        self.sel_anns = [] # to hold ann files
 
         self.gui_els = QtGuiElements()
         self.connect_gui_elements_to_functions()
@@ -69,7 +71,6 @@ class MainWindow():
         self.window.show()
         self.hide()
     def list_images(self,directory):
-
         if directory:
             self.gui_els.image_list_widget.clear()
             for filename in os.listdir(directory):
@@ -78,15 +79,11 @@ class MainWindow():
                     self.gui_els.image_list_widget.addItem(item)
 
     def choose_image(self):
-
-        directory = QFileDialog.getExistingDirectory(self, "Resim Klasörünü Seç","")
-
+        directory = QFileDialog.getExistingDirectory(self.gui_els, "Resim Klasörünü Seç","")
         if not os.listdir(self.img_path):
-
             files = os.listdir(directory)
             for file in files :
                 shutil.copy2(os.path.join(directory,file), self.img_path)
-
             self.selected_image_directory = self.img_path
             self.load_images_from_directory(self.img_path)
             self.list_images(self.img_path)
@@ -99,8 +96,9 @@ class MainWindow():
 
 
     def load_exist_annotations(self):
-        if os.path.isdir(self.annot_path):
-            recent_proj_path = os.listdir(self.annot_path)[-1]
+        annot_path_list = os.listdir(self.annot_path)
+        if annot_path_list:
+            recent_proj_path = annot_path_list[-1]
             class_txt_path = self.annot_path / recent_proj_path / 'classes.txt'
             if os.path.exists(class_txt_path):
                 self.define_annotation_image()
@@ -125,7 +123,7 @@ class MainWindow():
                 file_names.append(os.path.join(directory, file_name))
 
         if file_names:
-            self.selected_image_files = file_names
+            self.sel_imgs = file_names
             self.current_image_index = 0
             self.load_image(file_names[self.current_image_index])
 
@@ -144,9 +142,9 @@ class MainWindow():
         self.gui_els.image_label.setPixmap(pixmap)
 
     def next_image(self):
-        if self.current_image_index + 1 < len(self.selected_image_files):
+        if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
-            self.load_image(self.selected_image_files[self.current_image_index])
+            self.load_image(self.sel_imgs[self.current_image_index])
         if self.annotationCheck == True:
             self.define_annotation_image()
             self.load_annotation()
@@ -155,7 +153,7 @@ class MainWindow():
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
-            self.load_image(self.selected_image_files[self.current_image_index])
+            self.load_image(self.sel_imgs[self.current_image_index])
         if self.annotationCheck == True:
             self.define_annotation_image()
             self.load_annotation()
@@ -163,13 +161,13 @@ class MainWindow():
 
     def load_annotation(self):
 
-        directory = self.project_directory+"\\annotations"
+        directory = self.annot_path
         find_last_detections = os.listdir(directory)[-1]
-        self.last_detections_folder = directory+'\\'+find_last_detections
+        self.last_detections_folder = directory / find_last_detections
         file_names = os.listdir(self.last_detections_folder)
 
         file_names.remove("classes.txt")
-        self.selected_annotation_file = self.last_detections_folder + '\\' +file_names[self.current_image_index]
+        self.selected_annotation_file = self.last_detections_folder  / file_names[self.current_image_index]
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
@@ -223,20 +221,20 @@ class MainWindow():
         current_directory = os.getcwd()
         source = os.path.relpath(directory, current_directory)
         print(source)
-        thread_count = str(self.spinbox_thread.value())
-        batch_size = str(self.spinbox_batchsize.value())
-        conf_threshold = str(self.threshold_bar.value())
-        imgsize = str(self.comboBox_imgsize.currentText())
-        architecture = str(self.comboBox_architecture.currentText())
-        targetClasses = str(self.comboBox_targetClasses.currentText())
-        targetClassesText = "--classes \"" + str(self.comboBox_targetClasses.currentText())+ "\"" if targetClasses != "" else ""
-        deviceText = "0" if str(self.comboBox_device.currentText()) == "GPU" else "cpu"
+        thread_count = str(self.gui_els.spinbox_thread.value())
+        batch_size = str(self.gui_els.spinbox_batchsize.value())
+        conf_threshold = str(self.gui_els.threshold_bar.value())
+        imgsize = str(self.gui_els.comboBox_imgsize.currentText())
+        architecture = str(self.gui_els.comboBox_architecture.currentText())
+        targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
+        targetClassesText = "--classes \"" + str(self.gui_els.comboBox_targetClasses.currentText())+ "\"" if targetClasses != "" else ""
+        deviceText = "0" if str(self.gui_els.comboBox_device.currentText()) == "GPU" else "cpu"
 
-        annotations_dir = self.project_directory +"\\annotations"
+        annotations_dir = self.annot_path.__str__()
         print(targetClassesText)
-        QMessageBox.information(self, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
+        QMessageBox.information(self.gui_els, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
 
-        kwargs= ('--project '+annotations_dir+' --architecture '+architecture+' --thread-count '+thread_count+
+        kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+' --thread-count '+thread_count+
                    ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
                    ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
                    ' --no-trace --nosave --no-verify --device '+deviceText)
@@ -326,7 +324,7 @@ class MainWindow():
         QMessageBox.information(self, 'Bilgi', 'Export işlemi tamamlandı.')
 
     def define_annotation_image(self):
-        self.current_file = self.selected_image_files[self.current_image_index]
+        self.current_file = self.sel_imgs[self.current_image_index]
         self.current_file = self.current_file.replace("/","\\")
 
     def verify(self):
