@@ -15,6 +15,7 @@ class OpeningWindow(QWidget):
         self.setWindowIcon(icon)
         self.list_projects()
 
+
     def init_ui(self):
         self.setWindowTitle('İlk Ekran')
         self.projects_dir = "Projects"
@@ -37,7 +38,6 @@ class OpeningWindow(QWidget):
         self.projects_list = QListWidget(self)
         layout.addWidget(self.projects_list)
         self.projects_list.itemDoubleClicked.connect(self.on_item_double_clicked)
-
         self.setLayout(layout)
 
     def create_project(self):
