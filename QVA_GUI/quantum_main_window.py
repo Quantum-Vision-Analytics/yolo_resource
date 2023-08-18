@@ -260,8 +260,11 @@ class MainWindow():
         images = os.path.relpath(directory, current_directory)
 
         directory = self.project_directory / "annotations"
-        find_last_detections = os.listdir(directory)[-1]
-        annotations = str(directory / find_last_detections)
+        all_annot_dirs = os.listdir(directory)
+        annotations = directory
+        if all_annot_dirs:
+            find_last_detections = all_annot_dirs[-1]
+            annotations = str(directory / find_last_detections)
         print(images)
         print(annotations)
 
