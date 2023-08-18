@@ -14,11 +14,12 @@ class ModelInferenceHandler(abc.ABC):
         self.sleep_time = 0.25
         self.lock = threading.Lock()
 
+    # Method that all the thread objects are running
     def ThreadWork(self, initWait:int):
         time.sleep(initWait)
         # Continue until all images are read into batches and the queue is empty
-        ## todo ongoing changed to still remained data
-        while(self.batchQueue or self.ongoing):
+        # data_remained was ongoing
+        while(self.batchQueue or self.data_remained):
             # Wait for the lock
             if self.batchQueue and not self.lock.locked():
                 # Get a batch from queue and lock the queue object at that time
@@ -58,6 +59,7 @@ class ModelInferenceHandler(abc.ABC):
     def Postprocess(self, batch:list):
         pass
 
+    # Start the whole process and manage the reading images, batches, batch_queue insertion parts
     @abc.abstractmethod
     def Detect(self):
-       pass
+        pass
