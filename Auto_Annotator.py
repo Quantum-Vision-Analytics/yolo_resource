@@ -12,6 +12,11 @@ class Auto_Annotator:
         if arc_opt in ["yolov7","yolo","yolo7"]:
             from YOLOv7 import YOLOv7
             self.mih = YOLOv7(options)
+
+        elif arc_opt in ["fasterrcnn","retinanet","fcos","ssd300"]:
+            from Pytorch_Models import Pytorch_Models
+            self.mih = Pytorch_Models(options,arc_opt)
+
         else:
             print(f"No architecture named {options.architecture} found.")
             exit()
@@ -25,6 +30,8 @@ class Auto_Annotator:
 
         if(not self.opt.no_verify):
             self.annotVer.annot_verifier(self.opt.source, str(self.mih.save_dir))
+
+        return True
 
 
 # Get user arguments/inputs
