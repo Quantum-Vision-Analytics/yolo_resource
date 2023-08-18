@@ -116,7 +116,7 @@ class QtGuiElements(QWidget):
 
         self.label_architecture = QLabel('Architecture: ')
         self.comboBox_architecture = QComboBox()
-        self.comboBox_architecture.addItems(["Yolo", "ResNet", "Centernet"])
+        self.comboBox_architecture.addItems(["Yolo", "fasterrcnn", "retinanet", "fcos", "ssd300", "ResNet", "Centernet"])
 
         self.label_targetClasses = QLabel('Target Class: ')
         self.comboBox_targetClasses = QComboBox()
