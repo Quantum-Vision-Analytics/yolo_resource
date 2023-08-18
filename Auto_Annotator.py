@@ -61,8 +61,8 @@ def Parsing():
     parser.add_argument('--show-details', action='store_true', help='show detection details')
     parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work on per thread')
     parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
-    parser.add_argument('--architecture', type=str, default='yolov7', help='the architecture to use')
-    return parser.parse_args()
+    parser.add_argument('--architecture', type=str, default='yolov7', help='architecture used')
+    return parser#.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
 
 # Auto launch program
