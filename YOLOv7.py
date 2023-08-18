@@ -98,8 +98,6 @@ class YOLOv7(ModelInferenceHandler):
 
     # Object detection and classification
     def Predict(self, img_data:tuple):
-        #self.preds = [] # List of coordinates and class keys of predictions/labels
-        x = 0
         path, img, im0s, vid_cap = img_data
         timelap = [0] * 3
 

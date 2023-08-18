@@ -102,30 +102,6 @@ class Pytorch_Models(ModelInferenceHandler):
             dims, batch = self.Preprocess(batch)
             batch = self.Predict(batch)
             self.Postprocess(batch, dims, image_names)
-
-        # Step 3: Apply inference preprocessing transforms
-        #batch = [self.preprocess(img)]
-
-        # Step 4: Use the model and visualize the prediction
-        #prediction = model(batch)[0]
-
-        #labels = [weights.meta["categories"][i] for i in prediction["labels"]]
-
-        '''
-        with open(splitext(img_name)[0] + ".txt", "w") as f:
-            for label, bb in zip(list(prediction["labels"]), list(prediction["boxes"])):
-                org_bb = bb.detach().cpu().numpy()
-                output = "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label.item(), (org_bb[0] + org_bb[2])/2/img_dims[0], (org_bb[1] + org_bb[3])/2/img_dims[1], abs(org_bb[2] - org_bb[0])/img_dims[0], abs(org_bb[3] - org_bb[1])/img_dims[1])
-                #print(output)
-                print(f"{label.item()} {org_bb[0]} {org_bb[1]} {org_bb[2]} {org_bb[3]}")
-                f.write(output)
-
-        with open("classes.txt", "w") as f:
-            for x in weights.meta["categories"]:
-                if not x.startswith("_"):
-                    f.write(x + "\n")
-        '''
         
-
     def Train(self):
         pass

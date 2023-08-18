@@ -31,6 +31,8 @@ class Auto_Annotator:
         if(not self.opt.no_verify):
             self.annotVer.annot_verifier(self.opt.source, str(self.mih.save_dir))
 
+        return True
+
 
 # Get user arguments/inputs
 def Parsing():
