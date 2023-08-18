@@ -229,7 +229,10 @@ class MainWindow():
         annotations_dir = self.annot_path.__str__()
         print(targetClassesText)
         QMessageBox.information(self.gui_els, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
-
+        # todo
+        '''parser.add_argument('--project', default='detections', help='save results to project/name')
+        parser.add_argument('--name', default='result', help='save results to project/name')
+        parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')'''
         kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+' --thread-count '+thread_count+
                    ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
                    ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
@@ -242,6 +245,7 @@ class MainWindow():
         self.annotationCheck = True
 
         if self.annotationCheck == True:
+            self.load_exist_annotations()
             self.define_annotation_image()
             self.load_annotation()
             if self.selected_annotation_file:
@@ -262,6 +266,8 @@ class MainWindow():
         print(annotations)
 
         os.system("python labelImg\labelImg.py "+ images + " " + annotations)
+        self.load_exist_annotations()
+
 
     def ClassesTxtFileGenerator(self, exportPath:str):
 
@@ -306,19 +312,19 @@ class MainWindow():
             os.mkdir(exportPath)
 
         self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
-        self.dataset.annot_path = self.current_dir + "\\annotations"
+        self.dataset.annot_path = self.current_dir / "annotations"
 
     def export(self):
-        self.last_detections_path = self.annot_path + "\\" + os.listdir(self.annot_path)[-1]
-        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.yoloclasses, img_ext="jpg,jpeg,png,webp")
-        exportValue = str(self.comboBox_export.currentText())
+        self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
+        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
+        exportValue = str(self.gui_els.comboBox_export.currentText())
         if exportValue == "PascalVoc":
             self.ExportVocLabels(exportPath = self.voc_dir)
         elif exportValue == "Coco":
             self.ExportCocoLabels(exportPath = self.coco_dir)
         elif exportValue == "Yolo":
             self.ExportYoloLabels(exportPath = self.yolo_dir)
-        QMessageBox.information(self, 'Bilgi', 'Export işlemi tamamlandı.')
+        QMessageBox.information(self.gui_els, 'Bilgi', 'Export işlemi tamamlandı.')
 
     def define_annotation_image(self):
         self.current_file = self.sel_imgs[self.current_image_index]
