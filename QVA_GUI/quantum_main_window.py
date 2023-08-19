@@ -114,11 +114,9 @@ class MainWindow():
                 file_names = os.listdir(self.last_detections_folder)
                 file_names.remove("classes.txt")
                 self.sel_anns = file_names
-                image_name = self.sel_imgs[self.current_image_index]
-                ann_fname = self.find_annot_file(image_name)
-                if ann_fname is not None:
-                    self.selected_annotation_file = self.last_detections_folder / ann_fname
-                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+
+                self.load_annotation()
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 self.annotationCheck = True
         else:
             warnings.warn("there is no annotations generated. please run detection first to create annoations")
@@ -152,27 +150,25 @@ class MainWindow():
         image = cv2.imread(file_path)
         pixmap = self.create_qimage_from_opencv(image)
         self.gui_els.image_label.setPixmap(pixmap)
-
+    def display_annotated_image(self):
+        self.define_annotation_image()
+        self.load_annotation()
+        self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
     def next_image(self):
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
             self.load_image(self.sel_imgs[self.current_image_index])
 
             if self.annotationCheck == True:
-                self.define_annotation_image()
-                self.load_annotation()
-                if self.selected_annotation_file:
-                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+                self.display_annotated_image()
+
 
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
             self.load_image(self.sel_imgs[self.current_image_index])
         if self.annotationCheck == True:
-            self.define_annotation_image()
-            self.load_annotation()
-            if self.selected_annotation_file:
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            self.display_annotated_image()
 
     def load_annotation(self):
 
@@ -186,17 +182,18 @@ class MainWindow():
         height, width, _ = image.shape
 
         # Bounding box verilerini oku ve çiz
-        with open(annotations_path, 'r') as file:
-            for line in file:
-                data = line.split()
-                class_id = int(data[0])
-                x = int((float(data[1]) - (float(data[3]) / 2)) * width)
-                y = int((float(data[2]) - (float(data[4]) / 2)) * height)
-                w = int(float(data[3]) * width)
-                h = int(float(data[4]) * height)
+        if annotations_path:
+            with open(annotations_path, 'r') as file:
+                for line in file:
+                    data = line.split()
+                    class_id = int(data[0])
+                    x = int((float(data[1]) - (float(data[3]) / 2)) * width)
+                    y = int((float(data[2]) - (float(data[4]) / 2)) * height)
+                    w = int(float(data[3]) * width)
+                    h = int(float(data[4]) * height)
 
-                # Bounding box çiz
-                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    # Bounding box çiz
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         pixmap = self.create_qimage_from_opencv(image)
         self.gui_els.detection_result.setPixmap(pixmap)
@@ -246,10 +243,7 @@ class MainWindow():
 
         if self.annotationCheck == True:
             self.load_exist_annotations()
-            self.define_annotation_image()
-            self.load_annotation()
-            if self.selected_annotation_file:
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            self.display_annotated_image()
 
 
 
