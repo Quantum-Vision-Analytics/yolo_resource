@@ -13,8 +13,8 @@ class QtGuiElements(QWidget):
         # self.setMinimumSize(1600, 800)
 
         # Resim seçimi için QLabel ve QPushButton
-        self.image_label = QLabel(self)
-        self.detection_result = QLabel(self)
+        self.org_img_display = QLabel(self)
+        self.detection_display = QLabel(self)
         self.choose_image_button = QPushButton('Choose Image', self)
         # model seçimi için QLabel ve QLineEdit
         # self.model_label = QLabel('Model:', self)
@@ -32,8 +32,8 @@ class QtGuiElements(QWidget):
         hbox4 = QHBoxLayout()
 
         # Resim seçimi için QLabel ve QPushButton
-        hbox1.addWidget(self.image_label)
-        hbox1.addWidget(self.detection_result)
+        hbox1.addWidget(self.org_img_display)
+        hbox1.addWidget(self.detection_display)
         vbox1.addWidget(self.choose_image_button)
         vbox1.addWidget(self.close_project_button)
 

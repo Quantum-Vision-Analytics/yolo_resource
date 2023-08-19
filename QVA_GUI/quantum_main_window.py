@@ -149,7 +149,7 @@ class MainWindow():
     def load_image(self, file_path):
         image = cv2.imread(file_path)
         pixmap = self.create_qimage_from_opencv(image)
-        self.gui_els.image_label.setPixmap(pixmap)
+        self.gui_els.org_img_display.setPixmap(pixmap)
     def display_annotated_image(self):
         self.define_annotation_image()
         self.load_annotation()
@@ -196,7 +196,7 @@ class MainWindow():
                     cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         pixmap = self.create_qimage_from_opencv(image)
-        self.gui_els.detection_result.setPixmap(pixmap)
+        self.gui_els.detection_display.setPixmap(pixmap)
     def execute_auto_annotator(self, kwargs):
         qaaa = Quantum_AA_Arguments(kwargs)
         opt_cmd = qaaa.generate_arguments()
