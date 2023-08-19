@@ -18,6 +18,7 @@ from torchvision.models.detection import(
             ssd300_vgg16, SSD300_VGG16_Weights)
 
 class Pytorch_Models(ModelInferenceHandler):
+    output_path = str
     def __init__(self, options:argparse.ArgumentParser, model_name:str):
         super().__init__(options)
         self.model_name = model_name
@@ -82,7 +83,7 @@ class Pytorch_Models(ModelInferenceHandler):
 
         abs_source_path = str(Path(self.source).absolute())
         self.output_path = str(Path(self.save_dir).absolute()) + "\\"
-
+        file_names = []
         if os.path.isdir(self.source):
             file_names = sorted(glob.glob(os.path.join(abs_source_path, '*.*')))  # dir
         elif os.path.isfile(self.source):
