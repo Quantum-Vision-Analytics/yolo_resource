@@ -35,15 +35,14 @@ class MainWindow():
 
 
         self.project_directory = Path(project_directory)
-        self.current_dir = Path(os.getcwd())
         self.project_name = self.project_directory.name
-        self.annot_path = self.current_dir / "annotations"
+        self.anno_dir_path = self.project_directory / "annotations"
         #Identify the path to get from the annotations to the images
-        self.img_path = self.current_dir / "images"
+        self.img_dir_path = self.project_directory / "images"
 
-        self.yolo_dir = self.current_dir / "exported\\labels_yolo"
-        self.voc_dir = self.current_dir / "exported\\labels_voc"
-        self.coco_dir = self.current_dir / "exported\\labels_coco"
+        self.yolo_dir = self.project_directory / "exported" / "labels_yolo"
+        self.voc_dir = self.project_directory / "exported" / "labels_voc"
+        self.coco_dir = self.project_directory / "exported" / "labels_coco"
         self.annotationCheck = False
         self.sel_imgs = [] # to hold img files
         self.sel_anns = [] # to hold ann files
@@ -80,19 +79,19 @@ class MainWindow():
 
     def choose_image(self):
         directory = QFileDialog.getExistingDirectory(self.gui_els, "Resim Klasörünü Seç","")
-        if not os.listdir(self.img_path):
+        if not os.listdir(self.img_dir_path):
             files = os.listdir(directory)
             for file in files :
-                shutil.copy2(os.path.join(directory,file), self.img_path)
-            self.selected_image_directory = self.img_path
-            self.load_images_from_directory(self.img_path)
-            self.list_images(self.img_path)
+                shutil.copy2(os.path.join(directory,file), self.img_dir_path)
+            self.selected_image_directory = self.img_dir_path
+            self.load_images_from_directory(self.img_dir_path)
+            self.list_images(self.img_dir_path)
 
     def load_exist_images(self):
-        if os.listdir(self.img_path):
-            self.selected_image_directory = self.img_path
-            self.load_images_from_directory(self.img_path)
-            self.list_images(self.img_path)
+        if os.listdir(self.img_dir_path):
+            self.selected_image_directory = self.img_dir_path
+            self.load_images_from_directory(self.img_dir_path)
+            self.list_images(self.img_dir_path)
 
     def find_annot_file(self, img_name):
         img_name = Path(img_name)
@@ -102,22 +101,22 @@ class MainWindow():
                 return annot
         return None
     def load_exist_annotations(self):
-        annot_path_list = os.listdir(self.annot_path)
+        annot_path_list = os.listdir(self.anno_dir_path)
         if annot_path_list:
             recent_proj_path = annot_path_list[-1]
-            class_txt_path = self.annot_path / recent_proj_path / 'classes.txt'
+            class_txt_path = self.anno_dir_path / recent_proj_path / 'classes.txt'
             if os.path.exists(class_txt_path):
                 self.define_annotation_image()
-                directory = self.annot_path
+                directory = self.anno_dir_path
                 find_last_detections = os.listdir(directory)[-1]
-                self.last_detections_folder = directory / find_last_detections
-                file_names = os.listdir(self.last_detections_folder)
+                self.ann_selected_folder = directory / find_last_detections
+                file_names = os.listdir(self.ann_selected_folder)
                 file_names.remove("classes.txt")
                 self.sel_anns = file_names
                 image_name = self.sel_imgs[self.current_image_index]
                 ann_fname = self.find_annot_file(image_name)
                 if ann_fname is not None:
-                    self.selected_annotation_file = self.last_detections_folder / ann_fname
+                    self.selected_annotation_file = self.ann_selected_folder / ann_fname
                     self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 self.annotationCheck = True
         else:
@@ -178,7 +177,7 @@ class MainWindow():
 
         image_name = self.sel_imgs[self.current_image_index]
         annot_file = self.find_annot_file(image_name)
-        self.selected_annotation_file = self.last_detections_folder  / annot_file if annot_file is not None else None
+        self.selected_annotation_file = self.ann_selected_folder / annot_file if annot_file is not None else None
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
@@ -226,7 +225,7 @@ class MainWindow():
         targetClassesText = '--classes ' + str(self.gui_els.comboBox_targetClasses.currentText()) if targetClasses != "" else ""
         deviceText = "0" if str(self.gui_els.comboBox_device.currentText()) == "GPU" else "cpu"
 
-        annotations_dir = self.annot_path.__str__()
+        annotations_dir = self.anno_dir_path.__str__()
         print(targetClassesText)
         QMessageBox.information(self.gui_els, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
         # todo
@@ -255,26 +254,18 @@ class MainWindow():
 
     def edit(self):
 
-        directory = self.selected_image_directory
-        current_directory = os.getcwd()
-        images = os.path.relpath(directory, current_directory)
-
-        directory = self.project_directory / "annotations"
-        all_annot_dirs = os.listdir(directory)
-        annotations = directory
-        if all_annot_dirs:
-            find_last_detections = all_annot_dirs[-1]
-            annotations = str(directory / find_last_detections)
-        print(images)
-        print(annotations)
-
-        os.system("python labelImg\labelImg.py "+ images + " " + annotations)
+        image_name = self.sel_imgs[self.current_image_index]
+        self.find_annot_file(image_name)
+        anno_file = self.selected_annotation_file
+        if anno_file is None:
+            anno_file = self.ann_selected_folder / "classes.txt"
+        os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
         self.load_exist_annotations()
 
 
     def ClassesTxtFileGenerator(self, exportPath:str):
 
-       with open(self.annot_path, "r") as fr:
+       with open(self.anno_dir_path, "r") as fr:
            data = json.loads(fr.read())
            classes_dict = data['categories']
 
@@ -310,16 +301,16 @@ class MainWindow():
         self.dataset.export.ExportToVoc(output_path = exportPath)[0]
 
     def ExportCocoLabels(self, exportPath:str):
-        self.dataset.annot_path = self.coco_dir
+        self.dataset.anno_dir_path = self.coco_dir
         if os.path.isdir(exportPath) == False:
             os.mkdir(exportPath)
 
         self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
-        self.dataset.annot_path = self.current_dir / "annotations"
+        self.dataset.anno_dir_path = self.anno_dir_path
 
     def export(self):
-        self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
-        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
+        self.last_detections_path = self.anno_dir_path / os.listdir(self.anno_dir_path)[-1]
+        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_dir_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
         exportValue = str(self.gui_els.comboBox_export.currentText())
         if exportValue == "PascalVoc":
             self.ExportVocLabels(exportPath = self.voc_dir)
