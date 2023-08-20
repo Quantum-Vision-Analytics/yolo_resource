@@ -9,6 +9,7 @@ from FileGenerator import FileGenerator
 import threading
 import os
 import glob
+from utils.general import increment_path
 from ModelInferenceHandler import ModelInferenceHandler
 from torchvision.models.detection import(
             fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights,
@@ -17,6 +18,7 @@ from torchvision.models.detection import(
             ssd300_vgg16, SSD300_VGG16_Weights)
 
 class Pytorch_Models(ModelInferenceHandler):
+    output_path = str
     def __init__(self, options:argparse.ArgumentParser, model_name:str):
         super().__init__(options)
         self.model_name = model_name
@@ -58,50 +60,48 @@ class Pytorch_Models(ModelInferenceHandler):
 
     def Postprocess(self, batch:list, dimensions:list, img_names:list):
         for prediction, img_dims, img_name in zip(batch, dimensions, img_names):
-            with open(splitext(img_name)[0] + ".txt", "w") as f:
+            with open(self.output_path + os.path.basename(splitext(img_name)[0]) + ".txt", "w") as f:
                 for label, bb in zip(list(prediction["labels"]), list(prediction["boxes"])):
                     org_bb = bb.detach().cpu().numpy()
                     output = "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label.item(), (org_bb[0] + org_bb[2])/2/img_dims[0], (org_bb[1] + org_bb[3])/2/img_dims[1], abs(org_bb[2] - org_bb[0])/img_dims[0], abs(org_bb[3] - org_bb[1])/img_dims[1])
                     #print(f"{label.item()} {org_bb[0]} {org_bb[1]} {org_bb[2]} {org_bb[3]}")
                     f.write(output)
-                    
-        with open("val2017\classes.txt", "w") as f:
+
+        with open(self.output_path + "classes.txt", "w") as f:
             for x in self.weights.meta["categories"]:
                 f.write(x + "\n")
 
     def Detect(self):
         self.LoadResources()
 
-        # img_name = "val2017/000000000139.jpg"
-        # img_name2 = "val2017/000000000632.jpg"
-        # img_names = [img_name, img_name2]
-        # img_names2 = [img_name]
-        # img = read_image(img_name)
-        # img2 = read_image(img_name2)
-        # batch = [img, img2]
-        # batch2 = [img]
-
-        # dims, batch = self.Preprocess(batch)
-        # batch = self.Predict(batch)
-        # self.Postprocess(batch, dims, img_names)
-
         # Supported image types
         img_formats = ['jpg', 'jpeg', 'png']
 
-        abs_pos = str(Path(self.source).absolute())
+        # Directories, get full system directory with relevant directory
+        self.save_dir = Path(increment_path(Path(self.opt.project) / self.opt.name, exist_ok=self.opt.exist_ok))  # increment run
+        (self.save_dir if self.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make new directory if needed
+
+        abs_source_path = str(Path(self.source).absolute())
+        self.output_path = str(Path(self.save_dir).absolute()) + "\\"
+        file_names = []
         if os.path.isdir(self.source):
-            file_names = sorted(glob.glob(os.path.join(abs_pos, '*.*')))  # dir
+            file_names = sorted(glob.glob(os.path.join(abs_source_path, '*.*')))  # dir
         elif os.path.isfile(self.source):
             file_names = [self.source]  # files
         files = [x for x in file_names if x.split('.')[-1].lower() in img_formats]
 
-        for img_name in files:
-            batch = [read_image(img_name)]
-            image_names = [img_name]
+        for x in range(0,len(files)-5,5):
+            batch = []
+            image_names = []
+            for y in range(5):
+                img_name = files[x + y]
+                batch.append(read_image(img_name))
+                image_names.append(img_name)
 
             dims, batch = self.Preprocess(batch)
             batch = self.Predict(batch)
             self.Postprocess(batch, dims, image_names)
+            
         
     def Train(self):
         pass

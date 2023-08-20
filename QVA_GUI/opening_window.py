@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QListWidget, QPushButton, QListWidgetItem
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout
-
+from pathlib import Path
 import os
 from quantum_main_window import MainWindow
 class OpeningWindow(QWidget):
@@ -18,7 +18,8 @@ class OpeningWindow(QWidget):
 
     def init_ui(self):
         self.setWindowTitle('İlk Ekran')
-        self.projects_dir = "Projects"
+
+        self.projects_dir = Path(os.getcwd())/ "Projects"
         if not os.path.exists(self.projects_dir):
             os.makedirs(self.projects_dir)
         layout = QVBoxLayout()
@@ -39,24 +40,17 @@ class OpeningWindow(QWidget):
         layout.addWidget(self.projects_list)
         self.projects_list.itemDoubleClicked.connect(self.on_item_double_clicked)
         self.setLayout(layout)
-
+    def create_folders(self):
+        main_dir = self.sel_proj_dir
+        main_dir.mkdir(parents=True, exist_ok=True)
+        folders = ["verified","images","annotations","exported"]
+        [(main_dir/x).mkdir(parents=True, exist_ok=True) for x in folders]
     def create_project(self):
 
         if self.projects_dir:
-            self.project_directory = os.path.join(self.projects_dir, self.project_name.text())
-            os.makedirs(self.project_directory)
-            verify_dir = self.project_directory + "\\verified"
-            images_dir = self.project_directory + "\\images"
-            annotations_dir = self.project_directory + "\\annotations"
-            exported_dir = self.project_directory + "\\exported"
-            os.mkdir(verify_dir)
-            os.mkdir(images_dir)
-            os.mkdir(annotations_dir)
-            os.mkdir(exported_dir)
-
-            os.chdir(self.project_directory)
-            self.open_main_window(self.project_directory)
-            os.chdir("../../")
+            self.sel_proj_dir = self.projects_dir / self.project_name.text()
+            self.create_folders()
+            self.open_main_window(self.sel_proj_dir)
 
     def list_projects(self):
         if self.projects_dir:
@@ -71,10 +65,8 @@ class OpeningWindow(QWidget):
 
         # Mesaj kutusuyla çift tıklanan öğenin metnini gösteriyoruz
         # QMessageBox.information(self, "Çift Tıklama", f"Çift tıklanan öğe: {clicked_item_text}")
-        self.project_directory = os.path.join(self.projects_dir, self.project_name)
-        os.chdir(self.project_directory)
-        self.open_main_window(self.project_directory)
-        os.chdir("../../")
+        self.sel_proj_dir = os.path.join(self.projects_dir, self.project_name)
+        self.open_main_window(self.sel_proj_dir)
 
     def open_main_window(self, project_directory):
         self.main_window = MainWindow(project_directory)

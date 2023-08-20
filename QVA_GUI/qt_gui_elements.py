@@ -11,7 +11,8 @@ class QtGuiElements(QWidget):
         # Pencere boyutlandırma
         self.setGeometry(100, 100, 1600, 800)
         # self.setMinimumSize(1600, 800)
-
+        icon = QIcon('logo.png')
+        self.setWindowIcon(icon)
         # Resim seçimi için QLabel ve QPushButton
         self.org_img_display = QLabel(self)
         self.detection_display = QLabel(self)
