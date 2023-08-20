@@ -31,6 +31,9 @@ def check_is_image_file(file_name):
     return extension in valid_extensions
 
 class AutoAnnotatorWindow():
+    sel_img_fpath = str
+    selected_annotation_fpath = Path
+    selected_image_directory = Path
     def __init__(self, project_directory, opening_window):
 
 
@@ -46,6 +49,9 @@ class AutoAnnotatorWindow():
         self.annotationCheck = False
         self.sel_imgs = [] # to hold img files
         self.sel_anns = [] # to hold ann files
+        self.selected_annotation_fpath = None
+        self.selected_image_directory = None
+        self.sel_img_fpath = None
 
         self.gui_els = QtGuiElements()
         self.connect_gui_elements_to_functions()
@@ -115,7 +121,7 @@ class AutoAnnotatorWindow():
                 self.sel_anns = file_names
 
                 self.load_annotation()
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
                 self.annotationCheck = True
         else:
             warnings.warn("there is no annotations generated. please run detection first to create annoations")
@@ -152,7 +158,7 @@ class AutoAnnotatorWindow():
     def display_annotated_image(self):
         self.define_annotation_image()
         self.load_annotation()
-        self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+        self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
     def next_image(self):
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
@@ -177,9 +183,9 @@ class AutoAnnotatorWindow():
 
     def load_annotation(self):
 
-        image_name = self.sel_imgs[self.current_image_index]
-        annot_file = self.find_annot_file(image_name)
-        self.selected_annotation_file = self.ann_selected_folder / annot_file if annot_file is not None else None
+        self.sel_img_fpath = self.sel_imgs[self.current_image_index]
+        annot_file = self.find_annot_file(self.sel_img_fpath)
+        self.selected_annotation_fpath = self.ann_selected_folder / annot_file if annot_file is not None else None
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
@@ -256,7 +262,7 @@ class AutoAnnotatorWindow():
 
         image_name = self.sel_imgs[self.current_image_index]
         self.find_annot_file(image_name)
-        anno_file = self.selected_annotation_file
+        anno_file = self.selected_annotation_fpath
         if anno_file is None:
             anno_file = self.ann_selected_folder / "classes.txt"
         os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
@@ -309,16 +315,20 @@ class AutoAnnotatorWindow():
         self.dataset.annot_path = self.current_dir / "annotations"
 
     def export(self):
-        self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
-        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
-        exportValue = str(self.gui_els.comboBox_export.currentText())
-        if exportValue == "PascalVoc":
-            self.ExportVocLabels(exportPath = self.voc_dir)
-        elif exportValue == "Coco":
-            self.ExportCocoLabels(exportPath = self.coco_dir)
-        elif exportValue == "Yolo":
-            self.ExportYoloLabels(exportPath = self.yolo_dir)
-        QMessageBox.information(self.gui_els, 'Bilgi', 'Export işlemi tamamlandı.')
+        #self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
+        if self.selected_annotation_fpath is not None:
+            self.dataset = ImportYoloV5(path=self.selected_annotation_fpath, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
+            exportValue = str(self.gui_els.comboBox_export.currentText())
+            if exportValue == "PascalVoc":
+                self.ExportVocLabels(exportPath = self.voc_dir)
+            elif exportValue == "Coco":
+                self.ExportCocoLabels(exportPath = self.coco_dir)
+            elif exportValue == "Yolo":
+                self.ExportYoloLabels(exportPath = self.yolo_dir)
+            QMessageBox.information(self.gui_els, 'Info', 'Export process in completed')
+        else:
+            message = str(f"{str(self.sel_img_fpath)} file doenst have annotation file")
+            QMessageBox.warning(self.gui_els, "warning", message)
 
     def define_annotation_image(self):
         self.current_file = self.sel_imgs[self.current_image_index]
@@ -330,11 +340,11 @@ class AutoAnnotatorWindow():
         dst_dir= os.path.join(current_dir,verify_dir)
         self.define_annotation_image()
         self.load_annotation()
-        if self.current_file and self.selected_annotation_file:
+        if self.current_file and self.selected_annotation_fpath:
             shutil.copy(self.current_file, dst_dir)
-            shutil.copy(self.selected_annotation_file, dst_dir)
+            shutil.copy(self.selected_annotation_fpath, dst_dir)
             print(self.current_file)
-            print(self.selected_annotation_file)
+            print(self.selected_annotation_fpath)
         else:
             warnings.warn("there is no annotations generated. you can only verify images with their annotations")
 
