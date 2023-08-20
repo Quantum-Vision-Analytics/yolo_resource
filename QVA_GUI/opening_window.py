@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QVBoxLayout
 from pathlib import Path
 import os
 from quantum_main_window import MainWindow
+from PyQt5.QtWidgets import QMessageBox
 class OpeningWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -46,9 +47,13 @@ class OpeningWindow(QWidget):
         folders = ["verified","images","annotations","exported"]
         [(main_dir/x).mkdir(parents=True, exist_ok=True) for x in folders]
     def create_project(self):
-
         if self.projects_dir:
-            self.sel_proj_dir = self.projects_dir / self.project_name.text()
+            project_name = self.project_name.text()
+            if project_name:
+                self.sel_proj_dir = self.projects_dir / project_name
+            else:
+                QMessageBox.warning(self, "warning","please enter project name")
+                return False
             self.create_folders()
             self.open_main_window(self.sel_proj_dir)
 
