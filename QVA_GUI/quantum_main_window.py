@@ -116,11 +116,6 @@ class MainWindow():
 
                 self.load_annotation()
                 self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
-                image_name = self.sel_imgs[self.current_image_index]
-                ann_fname = self.find_annot_file(image_name)
-                if ann_fname is not None:
-                    self.selected_annotation_file = self.ann_selected_folder / ann_fname
-                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 self.annotationCheck = True
         else:
             warnings.warn("there is no annotations generated. please run detection first to create annoations")
