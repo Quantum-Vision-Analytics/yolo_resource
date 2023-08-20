@@ -30,8 +30,8 @@ def check_is_image_file(file_name):
     extension = file_name.rsplit(".", 1)[1].lower()
     return extension in valid_extensions
 
-class MainWindow():
-    def __init__(self, project_directory):
+class AutoAnnotatorWindow():
+    def __init__(self, project_directory, opening_window):
 
 
         self.project_directory = Path(project_directory)
@@ -51,6 +51,7 @@ class MainWindow():
         self.connect_gui_elements_to_functions()
         self.load_exist_images()
         self.load_exist_annotations()
+        self.opening_window = opening_window
     def connect_gui_elements_to_functions(self):
         # Düğmelere işlevsellik eklemek
         self.gui_els.choose_image_button.clicked.connect(self.choose_image)
@@ -66,9 +67,8 @@ class MainWindow():
         self.gui_els.close_project_button.clicked.connect(self.close_project)
 
     def close_project(self):
-        self.window = ProjectWindow()
-        self.window.show()
-        self.hide()
+        self.opening_window.show()
+        self.gui_els.close()
     def list_images(self,directory):
         if directory:
             self.gui_els.image_list_widget.clear()
