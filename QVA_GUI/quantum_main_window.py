@@ -160,14 +160,20 @@ class MainWindow():
 
             if self.annotationCheck == True:
                 self.display_annotated_image()
+        else:
+            QMessageBox.information(self.gui_els, 'Info',
+                                    'you reached into the end of image files please use prev button')
 
 
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
             self.load_image(self.sel_imgs[self.current_image_index])
-        if self.annotationCheck == True:
-            self.display_annotated_image()
+            if self.annotationCheck == True:
+                self.display_annotated_image()
+        else:
+            QMessageBox.information(self.gui_els, 'Info',
+                                    'this the beginning of files please use next button to proceed')
 
     def load_annotation(self):
 
@@ -213,7 +219,7 @@ class MainWindow():
         current_directory = os.getcwd()
         source = os.path.relpath(directory, current_directory)
         print(source)
-        thread_count = str(self.gui_els.spinbox_thread.value())
+        #thread_count = str(self.gui_els.spinbox_thread.value())
         batch_size = str(self.gui_els.spinbox_batchsize.value())
         conf_threshold = str(self.gui_els.threshold_bar.value())
         imgsize = str(self.gui_els.comboBox_imgsize.currentText())
@@ -229,7 +235,7 @@ class MainWindow():
         '''parser.add_argument('--project', default='detections', help='save results to project/name')
         parser.add_argument('--name', default='result', help='save results to project/name')
         parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')'''
-        kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+' --thread-count '+thread_count+
+        kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+#' --thread-count '+thread_count+
                    ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
                    ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
                    ' --no-trace --nosave --no-verify --device '+deviceText)
