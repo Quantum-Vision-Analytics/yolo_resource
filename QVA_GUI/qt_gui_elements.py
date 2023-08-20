@@ -14,8 +14,8 @@ class QtGuiElements(QWidget):
         icon = QIcon('logo.png')
         self.setWindowIcon(icon)
         # Resim seçimi için QLabel ve QPushButton
-        self.image_label = QLabel(self)
-        self.detection_result = QLabel(self)
+        self.org_img_display = QLabel(self)
+        self.detection_display = QLabel(self)
         self.choose_image_button = QPushButton('Choose Image', self)
         # model seçimi için QLabel ve QLineEdit
         # self.model_label = QLabel('Model:', self)
@@ -24,17 +24,33 @@ class QtGuiElements(QWidget):
         # Parametrelerini seçme ve Algılama
         self.detect_button = QPushButton('Detection', self)
         self.initUI()
+    def initDisplayUI(self):
+        # Create a label for the image title
+        image_disp_label = QLabel("Image Display")
+        detection_disp_label = QLabel("Detection Display")
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(image_disp_label)
+        vbox.addWidget(self.org_img_display)
+        vbox2 = QVBoxLayout()
+        vbox2.addWidget(detection_disp_label)
+        vbox2.addWidget(self.detection_display)
+        hbox1 = QHBoxLayout()
+        hbox1.addLayout(vbox)
+        hbox1.addLayout(vbox2)
+        return hbox1
+
     def initUI(self):
+        hbox1 = self.initDisplayUI()
         vbox1 = QVBoxLayout()
         vbox2 = QVBoxLayout()
-        hbox1 = QHBoxLayout()
+
         hbox2 = QHBoxLayout()
         hbox3 = QHBoxLayout()
         hbox4 = QHBoxLayout()
 
         # Resim seçimi için QLabel ve QPushButton
-        hbox1.addWidget(self.image_label)
-        hbox1.addWidget(self.detection_result)
+
         vbox1.addWidget(self.choose_image_button)
         vbox1.addWidget(self.close_project_button)
 

@@ -113,6 +113,9 @@ class MainWindow():
                 file_names = os.listdir(self.ann_selected_folder)
                 file_names.remove("classes.txt")
                 self.sel_anns = file_names
+
+                self.load_annotation()
+                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
                 image_name = self.sel_imgs[self.current_image_index]
                 ann_fname = self.find_annot_file(image_name)
                 if ann_fname is not None:
@@ -150,28 +153,26 @@ class MainWindow():
     def load_image(self, file_path):
         image = cv2.imread(file_path)
         pixmap = self.create_qimage_from_opencv(image)
-        self.gui_els.image_label.setPixmap(pixmap)
-
+        self.gui_els.org_img_display.setPixmap(pixmap)
+    def display_annotated_image(self):
+        self.define_annotation_image()
+        self.load_annotation()
+        self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
     def next_image(self):
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
             self.load_image(self.sel_imgs[self.current_image_index])
 
             if self.annotationCheck == True:
-                self.define_annotation_image()
-                self.load_annotation()
-                if self.selected_annotation_file:
-                    self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+                self.display_annotated_image()
+
 
     def previous_image(self):
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
             self.load_image(self.sel_imgs[self.current_image_index])
         if self.annotationCheck == True:
-            self.define_annotation_image()
-            self.load_annotation()
-            if self.selected_annotation_file:
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            self.display_annotated_image()
 
     def load_annotation(self):
 
@@ -185,20 +186,21 @@ class MainWindow():
         height, width, _ = image.shape
 
         # Bounding box verilerini oku ve çiz
-        with open(annotations_path, 'r') as file:
-            for line in file:
-                data = line.split()
-                class_id = int(data[0])
-                x = int((float(data[1]) - (float(data[3]) / 2)) * width)
-                y = int((float(data[2]) - (float(data[4]) / 2)) * height)
-                w = int(float(data[3]) * width)
-                h = int(float(data[4]) * height)
+        if annotations_path:
+            with open(annotations_path, 'r') as file:
+                for line in file:
+                    data = line.split()
+                    class_id = int(data[0])
+                    x = int((float(data[1]) - (float(data[3]) / 2)) * width)
+                    y = int((float(data[2]) - (float(data[4]) / 2)) * height)
+                    w = int(float(data[3]) * width)
+                    h = int(float(data[4]) * height)
 
-                # Bounding box çiz
-                cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    # Bounding box çiz
+                    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         pixmap = self.create_qimage_from_opencv(image)
-        self.gui_els.detection_result.setPixmap(pixmap)
+        self.gui_els.detection_display.setPixmap(pixmap)
     def execute_auto_annotator(self, kwargs):
         qaaa = Quantum_AA_Arguments(kwargs)
         opt_cmd = qaaa.generate_arguments()
@@ -245,10 +247,7 @@ class MainWindow():
 
         if self.annotationCheck == True:
             self.load_exist_annotations()
-            self.define_annotation_image()
-            self.load_annotation()
-            if self.selected_annotation_file:
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_file)
+            self.display_annotated_image()
 
 
 
@@ -301,16 +300,16 @@ class MainWindow():
         self.dataset.export.ExportToVoc(output_path = exportPath)[0]
 
     def ExportCocoLabels(self, exportPath:str):
-        self.dataset.anno_dir_path = self.coco_dir
+        self.dataset.annot_path = self.coco_dir
         if os.path.isdir(exportPath) == False:
             os.mkdir(exportPath)
 
         self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
-        self.dataset.anno_dir_path = self.anno_dir_path
+        self.dataset.annot_path = self.current_dir / "annotations"
 
     def export(self):
-        self.last_detections_path = self.anno_dir_path / os.listdir(self.anno_dir_path)[-1]
-        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_dir_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
+        self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
+        self.dataset = ImportYoloV5(path=self.last_detections_path, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
         exportValue = str(self.gui_els.comboBox_export.currentText())
         if exportValue == "PascalVoc":
             self.ExportVocLabels(exportPath = self.voc_dir)
