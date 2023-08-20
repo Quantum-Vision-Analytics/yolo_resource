@@ -224,7 +224,7 @@ class MainWindow():
 
         annotations_dir = self.anno_dir_path.__str__()
         print(targetClassesText)
-        QMessageBox.information(self.gui_els, 'Bilgi', 'Detection işlemi yapılıyor. İşlem tamamlandığında sonuçları görebileceksiniz.')
+        QMessageBox.information(self.gui_els, 'Info', 'detection is processing. you will see the results after finishing')
         # todo
         '''parser.add_argument('--project', default='detections', help='save results to project/name')
         parser.add_argument('--name', default='result', help='save results to project/name')
