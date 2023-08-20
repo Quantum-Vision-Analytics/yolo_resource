@@ -162,7 +162,7 @@ class QtGuiElements(QWidget):
         self.next_button.setGeometry(120, 460, 90, 30)
         self.previous_button = QPushButton('Previous', self)
         self.previous_button.setGeometry(10, 460, 90, 30)
-        self.close_project_button = QPushButton('Projeyi kapat')
+        self.close_project_button = QPushButton('Close Project')
 
         icon = QIcon('logo.png')
         self.setWindowIcon(icon)
