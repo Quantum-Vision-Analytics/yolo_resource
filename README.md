@@ -1,6 +1,53 @@
-# yolo_resource
+# Quantum Vision & Analytics Otomatik Görüntü Etiketleyici(Auto Annotator) yolo_resource
 
-## Ana Yapı:
+## 1 Giriş
+
+Otomatik Görüntü Etiketleme tekniklerinin ana fikri, çok sayıda görüntü örneğinden anlamsal kavram modellerini otomatik
+olarak öğrenmek ve kavram modellerini yeni görüntüleri etiketlemek için kullanmaktır. Resimlere anlamsal etiketler
+eklendikten sonra, metin belgesi geri çağrımına benzer şekilde, resimler anahtar kelimelerle alınabilir. Bu sayede
+duruma özgü veriler elde edilmiş olur. Otomatik Görüntü Etiketleyici bunu sağlamaktadır.
+
+### 1.1	Bu Dökümanın Amacı
+
+Otomatik Görüntü Etiketleyicinin çalışması için gerekli olan kütüphanelerin, sistemlerin kurulumunu ve olası
+problemlerin çözümlerini bir rehber olarak sunmaktır.
+
+## 2	Kurulum Öncesi Gereksinimler
+
+### 2.1 Donanım Gereksinimleri
+
+#### 2.1.1 Minimum Donanım Gereksinimleri (Kendi Pc min Özelliklerini yazdım)
+
+İşlemci hızı:  2,30 GHz
+Rastgele erişim belleği (RAM): 12 GB
+
+#### 2.1.2 Önerilen Donanım Gereksinimleri (Buraya İstenilen bi otralama değer yazabiliriz.)
+
+İşlemci hızı:
+Rastgele erişim belleği (RAM):
+
+### 2.2 Yazılım Gereksinimleri
+
+#### 2.2.1 Gerekli IDE’ler
+
+- Pycharm Comminity Edition veya VS Code
+- Pylabel Image Editor
+
+##### 2.2.2 Kuruluması Gereken Kütüphaneler
+
+- pip install pyqt5-tools
+- pip install lxlml
+- Daha sonra terminelden labelımg’in dosya yoluna gelip  
+  `pyrcc5 -o libs/resources.py resources.qrc` komutu execute edilir.
+  Bu işlem yapılmadığı takdirde File `"C:\Users..\QVA_GUI\labelImg\labelImg.py", from libs.resources import *` \
+ModuleNotFoundError: No module named 'libs.resources' hatası alınır.
+
+## 3 Mimari Model Ağırlıkları
+- YOLOv7 [yolov7-e6e.pt]
+- Pytorch Modelleri [FasterRCNN, RetinaNet, Fcos, SSD300]
+
+## 4 Class yapilari:
+
 ``` 
 '''  
 kapsami:  
