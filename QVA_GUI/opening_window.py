@@ -33,7 +33,7 @@ class OpeningWindow(QWidget):
         self.project_name = QLineEdit(self)
         layout.addWidget(self.project_name)
 
-        button1 = QPushButton('Create Porject')
+        button1 = QPushButton('Create Project')
         button1.clicked.connect(self.create_project)
         layout.addWidget(button1)
 
