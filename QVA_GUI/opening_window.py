@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout
 from pathlib import Path
 import os
-from quantum_main_window import MainWindow
+from auto_annotator_window import AutoAnnotatorWindow
 from PyQt5.QtWidgets import QMessageBox
 class OpeningWindow(QWidget):
     def __init__(self):
@@ -24,7 +24,7 @@ class OpeningWindow(QWidget):
         if not os.path.exists(self.projects_dir):
             os.makedirs(self.projects_dir)
         layout = QVBoxLayout()
-        self.label = QLabel('Bu birinci ekran')
+        self.label = QLabel('opening project window')
         layout.addWidget(self.label)
 
         self.label_project = QLabel("Project Name: ")
@@ -33,7 +33,7 @@ class OpeningWindow(QWidget):
         self.project_name = QLineEdit(self)
         layout.addWidget(self.project_name)
 
-        button1 = QPushButton('Proje Oluştur')
+        button1 = QPushButton('Create Porject')
         button1.clicked.connect(self.create_project)
         layout.addWidget(button1)
 
@@ -74,7 +74,7 @@ class OpeningWindow(QWidget):
         self.open_main_window(self.sel_proj_dir)
 
     def open_main_window(self, project_directory):
-        self.main_window = MainWindow(project_directory)
+        self.main_window = AutoAnnotatorWindow(project_directory, self)
         self.main_window.gui_els.show()
         self.hide()
 
