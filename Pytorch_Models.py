@@ -59,6 +59,7 @@ class Pytorch_Models(ModelInferenceHandler):
 
     def Postprocess(self, batch:list, dimensions:list, img_names:list):
         for prediction, img_dims, img_name in zip(batch, dimensions, img_names):
+            ##TODO Add class name filtering
             with open(self.output_path + os.path.basename(splitext(img_name)[0]) + ".txt", "w") as f:
                 for label, bb in zip(list(prediction["labels"]), list(prediction["boxes"])):
                     org_bb = bb.detach().cpu().numpy()
@@ -89,10 +90,12 @@ class Pytorch_Models(ModelInferenceHandler):
             file_names = [self.source]  # files
         files = [x for x in file_names if x.split('.')[-1].lower() in img_formats]
 
-        for x in range(0,len(files)-5,5):
+        batch_size = self.opt.batch_size
+        remainder = len(files) % batch_size
+        for x in range(0,len(files)-remainder,batch_size):
             batch = []
             image_names = []
-            for y in range(5):
+            for y in range(batch_size):
                 img_name = files[x + y]
                 batch.append(read_image(img_name))
                 image_names.append(img_name)
@@ -100,6 +103,13 @@ class Pytorch_Models(ModelInferenceHandler):
             dims, batch = self.Preprocess(batch)
             batch = self.Predict(batch)
             self.Postprocess(batch, dims, image_names)
+
+        x = len(files) - remainder
+        batch = [read_image(name) for name in files[x:]]
+        image_names = files[x:]
+        dims, batch = self.Preprocess(batch)
+        batch = self.Predict(batch)
+        self.Postprocess(batch, dims, image_names)
             
         
     def Train(self):
