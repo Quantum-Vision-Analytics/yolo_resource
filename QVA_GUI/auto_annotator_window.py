@@ -34,6 +34,7 @@ class AutoAnnotatorWindow():
     sel_img_fpath = str
     selected_annotation_fpath = Path
     selected_image_directory = Path
+    sel_anno_dir_path = Path
     def __init__(self, project_directory, opening_window):
 
 
@@ -52,6 +53,7 @@ class AutoAnnotatorWindow():
         self.selected_annotation_fpath = None
         self.selected_image_directory = None
         self.sel_img_fpath = None
+        self.sel_anno_dir_path = None
 
         self.gui_els = QtGuiElements()
         self.connect_gui_elements_to_functions()
@@ -115,8 +117,8 @@ class AutoAnnotatorWindow():
                 self.define_annotation_image()
                 directory = self.anno_dir_path
                 find_last_detections = os.listdir(directory)[-1]
-                self.ann_selected_folder = directory / find_last_detections
-                file_names = os.listdir(self.ann_selected_folder)
+                self.sel_anno_dir_path = directory / find_last_detections
+                file_names = os.listdir(self.sel_anno_dir_path)
                 file_names.remove("classes.txt")
                 self.sel_anns = file_names
 
@@ -185,7 +187,7 @@ class AutoAnnotatorWindow():
 
         self.sel_img_fpath = self.sel_imgs[self.current_image_index]
         annot_file = self.find_annot_file(self.sel_img_fpath)
-        self.selected_annotation_fpath = self.ann_selected_folder / annot_file if annot_file is not None else None
+        self.selected_annotation_fpath = self.sel_anno_dir_path / annot_file if annot_file is not None else None
 
     def draw_bounding_boxes(self, image_path, annotations_path):
         # Resmi yükle
@@ -259,14 +261,19 @@ class AutoAnnotatorWindow():
 
 
     def edit(self):
-
-        image_name = self.sel_imgs[self.current_image_index]
-        self.find_annot_file(image_name)
-        anno_file = self.selected_annotation_fpath
-        if anno_file is None:
-            anno_file = self.ann_selected_folder / "classes.txt"
-        os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
-        self.load_exist_annotations()
+        if self.sel_anno_dir_path:
+            image_name = self.sel_imgs[self.current_image_index]
+            self.find_annot_file(image_name)
+            anno_file = self.selected_annotation_fpath
+            if anno_file is None:
+                anno_file = self.sel_anno_dir_path / "classes.txt"
+                if os.path.isfile(anno_file):
+                    os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
+                    self.load_exist_annotations()
+                else:
+                    QMessageBox.warning(self.gui_els, "warning", "please insert classes.txt")
+        else:
+            QMessageBox.warning(self.gui_els, "warning", "please select or insert annotation folder")
 
 
     def ClassesTxtFileGenerator(self, exportPath:str):
