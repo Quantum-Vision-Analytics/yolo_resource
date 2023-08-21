@@ -47,7 +47,6 @@ class AutoAnnotatorWindow():
         self.yolo_dir = self.project_directory / "exported" / "labels_yolo"
         self.voc_dir = self.project_directory / "exported" / "labels_voc"
         self.coco_dir = self.project_directory / "exported" / "labels_coco"
-        self.annotationCheck = False
         self.sel_imgs = [] # to hold img files
         self.sel_anns = [] # to hold ann files
         self.selected_annotation_fpath = None
@@ -121,10 +120,8 @@ class AutoAnnotatorWindow():
                 file_names = os.listdir(self.sel_anno_dir_path)
                 file_names.remove("classes.txt")
                 self.sel_anns = file_names
-
                 self.load_annotation()
                 self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
-                self.annotationCheck = True
         else:
             warnings.warn("there is no annotations generated. please run detection first to create annoations")
 
@@ -165,9 +162,8 @@ class AutoAnnotatorWindow():
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
             self.load_image(self.sel_imgs[self.current_image_index])
+            self.display_annotated_image()
 
-            if self.annotationCheck == True:
-                self.display_annotated_image()
         else:
             QMessageBox.information(self.gui_els, 'Info',
                                     'you reached into the end of image files please use prev button')
@@ -177,8 +173,8 @@ class AutoAnnotatorWindow():
         if self.current_image_index - 1 >= 0:
             self.current_image_index -= 1
             self.load_image(self.sel_imgs[self.current_image_index])
-            if self.annotationCheck == True:
-                self.display_annotated_image()
+            self.display_annotated_image()
+
         else:
             QMessageBox.information(self.gui_els, 'Info',
                                     'this the beginning of files please use next button to proceed')
@@ -222,44 +218,44 @@ class AutoAnnotatorWindow():
             else:
                 result = aa.Process()
         return result
-    def detect(self):
-
+    def get_annotation_folder(self):
+        architecture = str(self.gui_els.comboBox_architecture.currentText())
+        targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
+        annot_folder_name = f"{architecture}_{targetClasses}" if targetClasses != "" else architecture
+        self.sel_anno_dir_path = self.anno_dir_path / annot_folder_name
+    def __create_detect_keywords(self):
         directory = self.selected_image_directory
         current_directory = os.getcwd()
         source = os.path.relpath(directory, current_directory)
         print(source)
-        #thread_count = str(self.gui_els.spinbox_thread.value())
+
         batch_size = str(self.gui_els.spinbox_batchsize.value())
         conf_threshold = str(self.gui_els.threshold_bar.value())
         imgsize = str(self.gui_els.comboBox_imgsize.currentText())
         architecture = str(self.gui_els.comboBox_architecture.currentText())
         targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
-        targetClassesText = '--classes ' + str(self.gui_els.comboBox_targetClasses.currentText()) if targetClasses != "" else ""
+        target_classes_msg = '--classes ' + targetClasses if targetClasses != "" else ""
         deviceText = "0" if str(self.gui_els.comboBox_device.currentText()) == "GPU" else "cpu"
 
         annotations_dir = self.anno_dir_path.__str__()
-        print(targetClassesText)
-        QMessageBox.information(self.gui_els, 'Info', 'detection is processing. you will see the results after finishing')
-        # todo
-        '''parser.add_argument('--project', default='detections', help='save results to project/name')
-        parser.add_argument('--name', default='result', help='save results to project/name')
-        parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')'''
+        QMessageBox.information(self.gui_els, 'Info',
+                                'detection is processing. you will see the results after finishing')
+
         detection_output_fname = f"{architecture}_{targetClasses}" if targetClasses != "" else architecture
-        kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+#' --thread-count '+thread_count+
-                   ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
-                   ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText +
-                   ' --no-trace --nosave --no-verify --device ' + deviceText + ' --exist-ok' + f' --name {detection_output_fname}')
+        kwargs = (f'--project {annotations_dir}' + f' --architecture {architecture}' +  f' --device {deviceText}' +
+                    f' --batch-size {batch_size}' + f' --conf-thres {conf_threshold}' + f' --name {detection_output_fname}' +
+                    f' --img-size {imgsize}' + f' --source {source}' + f' --save-txt {target_classes_msg}')
+        kwargs = kwargs + ' --no-trace --nosave --no-verify' + ' --exist-ok' + ' --iou-thres 0.4' + " --weights yolov7-e6e.pt"
+        print(kwargs)
+        return kwargs
+
+    def detect(self):
+        kwargs = self.__create_detect_keywords()
         if self.execute_auto_annotator(kwargs):
             QMessageBox.information(self.gui_els, 'Info', 'detection is finished.')
-        # command = 'python ../Auto_Annotator.py --project ' + annotations_dir + ' --architecture ' + architecture + ' --thread-count ' + thread_count + ' --batch-size ' + batch_size + ' --weights yolov7-e6e.pt --conf-thres ' + conf_threshold + ' --iou-thres 0.4 --img-size ' + imgsize + ' --source ' + source + ' --save-txt ' + targetClassesText + ' --no-trace --nosave --no-verify --device ' + deviceText
-        # process = subprocess.Popen(command, shell=True)
-        # process.wait()
-        # if process.returncode == 0:
-        self.annotationCheck = True
 
-        if self.annotationCheck == True:
-            self.load_exist_annotations()
-            self.display_annotated_image()
+        self.load_exist_annotations()
+        self.display_annotated_image()
 
 
 
