@@ -217,10 +217,11 @@ class AutoAnnotatorWindow():
         with torch.no_grad():
             if opt_cmd.update:  # update all models (to fix SourceChangeWarning)
                 for opt_cmd.weights in ['yolov7.pt']:
-                    aa.Process()
+                    result = aa.Process()
                     strip_optimizer(opt_cmd.weights)
             else:
-                aa.Process()
+                result = aa.Process()
+        return result
     def detect(self):
 
         directory = self.selected_image_directory
@@ -243,11 +244,13 @@ class AutoAnnotatorWindow():
         '''parser.add_argument('--project', default='detections', help='save results to project/name')
         parser.add_argument('--name', default='result', help='save results to project/name')
         parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')'''
+        detection_output_fname = f"{architecture}_{targetClasses}" if targetClasses != "" else architecture
         kwargs= ('--project ' + annotations_dir + ' --architecture '+architecture+#' --thread-count '+thread_count+
                    ' --batch-size '+batch_size+' --weights yolov7-e6e.pt --conf-thres '+conf_threshold+
-                   ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText+
-                   ' --no-trace --nosave --no-verify --device '+deviceText)
-        self.execute_auto_annotator(kwargs)
+                   ' --iou-thres 0.4 --img-size '+imgsize+' --source '+source+' --save-txt '+targetClassesText +
+                   ' --no-trace --nosave --no-verify --device ' + deviceText + ' --exist-ok' + f' --name {detection_output_fname}')
+        if self.execute_auto_annotator(kwargs):
+            QMessageBox.information(self.gui_els, 'Info', 'detection is finished.')
         # command = 'python ../Auto_Annotator.py --project ' + annotations_dir + ' --architecture ' + architecture + ' --thread-count ' + thread_count + ' --batch-size ' + batch_size + ' --weights yolov7-e6e.pt --conf-thres ' + conf_threshold + ' --iou-thres 0.4 --img-size ' + imgsize + ' --source ' + source + ' --save-txt ' + targetClassesText + ' --no-trace --nosave --no-verify --device ' + deviceText
         # process = subprocess.Popen(command, shell=True)
         # process.wait()
