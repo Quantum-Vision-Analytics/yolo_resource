@@ -108,22 +108,18 @@ class AutoAnnotatorWindow():
                 return annot
         return None
     def load_exist_annotations(self):
-        annot_path_list = os.listdir(self.anno_dir_path)
-        if annot_path_list:
-            recent_proj_path = annot_path_list[-1]
-            class_txt_path = self.anno_dir_path / recent_proj_path / 'classes.txt'
-            if os.path.exists(class_txt_path):
-                self.define_annotation_image()
-                directory = self.anno_dir_path
-                find_last_detections = os.listdir(directory)[-1]
-                self.sel_anno_dir_path = directory / find_last_detections
-                file_names = os.listdir(self.sel_anno_dir_path)
-                file_names.remove("classes.txt")
-                self.sel_anns = file_names
-                self.load_annotation()
-                self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
+        self.find_sel_annot_folder()
+        class_txt_path = self.sel_anno_dir_path / 'classes.txt'
+        if os.path.exists(class_txt_path):
+            self.define_annotation_image()
+            file_names = os.listdir(self.sel_anno_dir_path)
+            file_names.remove("classes.txt")
+            self.sel_anns = file_names
+            self.find_annotation_file()
+            self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
+
         else:
-            warnings.warn("there is no annotations generated. please run detection first to create annoations")
+            QMessageBox.information(self.gui_els, 'warning', 'there is classes.txt file to display label')
 
     def load_images_from_directory(self, directory):
         file_names = []
@@ -156,7 +152,7 @@ class AutoAnnotatorWindow():
         self.gui_els.org_img_display.setPixmap(pixmap)
     def display_annotated_image(self):
         self.define_annotation_image()
-        self.load_annotation()
+        self.find_annotation_file()
         self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
     def next_image(self):
         if self.current_image_index + 1 < len(self.sel_imgs):
@@ -179,8 +175,7 @@ class AutoAnnotatorWindow():
             QMessageBox.information(self.gui_els, 'Info',
                                     'this the beginning of files please use next button to proceed')
 
-    def load_annotation(self):
-
+    def find_annotation_file(self):
         self.sel_img_fpath = self.sel_imgs[self.current_image_index]
         annot_file = self.find_annot_file(self.sel_img_fpath)
         self.selected_annotation_fpath = self.sel_anno_dir_path / annot_file if annot_file is not None else None
@@ -218,11 +213,26 @@ class AutoAnnotatorWindow():
             else:
                 result = aa.Process()
         return result
-    def get_annotation_folder(self):
+    def find_sel_annot_folder(self):
         architecture = str(self.gui_els.comboBox_architecture.currentText())
         targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
         annot_folder_name = f"{architecture}_{targetClasses}" if targetClasses != "" else architecture
-        self.sel_anno_dir_path = self.anno_dir_path / annot_folder_name
+        annot_path_list = os.listdir(self.anno_dir_path)
+        if annot_path_list:
+            if annot_folder_name in annot_path_list:
+                self.sel_anno_dir_path = self.anno_dir_path / annot_folder_name
+            else:
+                message = (f'there is no such "{annot_folder_name}" annotation folder. Please run detect first'
+                           f' to create such annotation folder')
+                QMessageBox.information(self.gui_els, 'warning', message)
+                self.sel_anno_dir_path = self.anno_dir_path / annot_path_list[-1]
+        else:
+            self.sel_anno_dir_path = None
+            QMessageBox.information(self.gui_els, 'warning', 'there is no annotation folder')
+
+        
+
+
     def __create_detect_keywords(self):
         directory = self.selected_image_directory
         current_directory = os.getcwd()
@@ -345,7 +355,7 @@ class AutoAnnotatorWindow():
         current_dir = os.getcwd()
         dst_dir= os.path.join(current_dir,verify_dir)
         self.define_annotation_image()
-        self.load_annotation()
+        self.find_annotation_file()
         if self.current_file and self.selected_annotation_fpath:
             shutil.copy(self.current_file, dst_dir)
             shutil.copy(self.selected_annotation_fpath, dst_dir)
