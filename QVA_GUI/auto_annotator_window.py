@@ -35,10 +35,11 @@ class AutoAnnotatorWindow():
     selected_annotation_fpath = Path
     selected_image_directory = Path
     sel_anno_dir_path = Path
+    default_classes_files = list
     target_class = str
     def __init__(self, project_directory, opening_window):
 
-
+        self.opening_window = opening_window
         self.project_directory = Path(project_directory)
         self.project_name = self.project_directory.name
         self.anno_dir_path = self.project_directory / "annotations"
@@ -57,10 +58,15 @@ class AutoAnnotatorWindow():
         self.target_class = None
 
         self.gui_els = QtGuiElements()
+        self.get_default_class_paths()
         self.connect_gui_elements_to_functions()
         self.load_exist_images()
         self.load_exist_annotations()
-        self.opening_window = opening_window
+    def get_default_class_paths(self):
+        def_class_dir_path = self.project_directory.parent.parent.parent / "classes_for_allmodels"
+        classes_files = os.listdir(def_class_dir_path)
+        self.default_classes_files = [def_class_dir_path/fname for fname in classes_files
+                                      if fname.rsplit(".",1)[-1] == "txt"]
     def connect_gui_elements_to_functions(self):
         # Düğmelere işlevsellik eklemek
         self.gui_els.choose_image_button.clicked.connect(self.choose_image)
@@ -128,7 +134,8 @@ class AutoAnnotatorWindow():
             self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
 
         else:
-            QMessageBox.information(self.gui_els, 'warning', 'there is classes.txt file to display label')
+            arch = self.create_classses_file_selected_annot_fold()
+            QMessageBox.information(self.gui_els, 'warning', f'there is no classes.txt file for {arch} to display label')
 
     def load_images_from_directory(self, directory):
         file_names = []
@@ -222,22 +229,41 @@ class AutoAnnotatorWindow():
             else:
                 result = aa.Process()
         return result
+    def find_classes_file_name(self):
+        architecture = str(self.gui_els.comboBox_architecture.currentText())
+        for fclass_path in self.default_classes_files:
+            if architecture.lower() in fclass_path.name:
+                return fclass_path, architecture
+        return None
+    def create_classses_file_selected_annot_fold(self):
+        fclass_path, architecture = self.find_classes_file_name()
+        if fclass_path:
+            shutil.copy(fclass_path, self.sel_anno_dir_path / "classes.txt")
+            QMessageBox.information(self.gui_els, 'info', f'default classes files for {architecture} is inserted')
+        else:
+            QMessageBox.information(self.gui_els, 'error', f'please insert classes file for {architecture}')
+        return architecture
+    def create_annotation_folder(self):
+
+        arch = str(self.gui_els.comboBox_architecture.currentText())
+        tar_cls = str(self.gui_els.comboBox_targetClasses.currentText())
+        sel_ann_dir_name = f"{arch}_{tar_cls}" if tar_cls != "" else arch
+        self.sel_anno_dir_path = self.anno_dir_path / sel_ann_dir_name
+        self.sel_anno_dir_path.mkdir(parents=True, exist_ok=True)
+        self.create_classses_file_selected_annot_fold()
+
+        return sel_ann_dir_name
     def find_sel_annot_folder(self):
         architecture = str(self.gui_els.comboBox_architecture.currentText())
         targetClasses = str(self.gui_els.comboBox_targetClasses.currentText())
         annot_folder_name = f"{architecture}_{targetClasses}" if targetClasses != "" else architecture
         annot_path_list = os.listdir(self.anno_dir_path)
-        if annot_path_list:
-            if annot_folder_name in annot_path_list:
-                self.sel_anno_dir_path = self.anno_dir_path / annot_folder_name
-            else:
-                message = (f'there is no such "{annot_folder_name}" annotation folder. Please run detect first'
-                           f' to create such annotation folder')
-                QMessageBox.information(self.gui_els, 'warning', message)
-                self.sel_anno_dir_path = self.anno_dir_path / annot_path_list[-1]
+        if not annot_path_list or annot_folder_name not in annot_path_list:
+            QMessageBox.information(self.gui_els, 'warning', 'there is no existing annotation folder')
+            sel_ann_dir_name = self.create_annotation_folder()
+            QMessageBox.information(self.gui_els, 'info', f'{sel_ann_dir_name} folder is created for annotations')
         else:
-            self.sel_anno_dir_path = None
-            QMessageBox.information(self.gui_els, 'warning', 'there is no annotation folder')
+            self.sel_anno_dir_path = self.anno_dir_path / annot_folder_name
 
         
 
@@ -281,17 +307,8 @@ class AutoAnnotatorWindow():
     def edit(self):
         if self.sel_anno_dir_path:
             image_name = self.sel_imgs[self.current_image_index]
-            self.find_annot_file(image_name)
-            anno_file = self.selected_annotation_fpath
-            if anno_file is None:
-                anno_file = self.sel_anno_dir_path / "classes.txt"
-            if os.path.isfile(anno_file):
-                os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
-                self.load_exist_annotations()
-            else:
-                QMessageBox.warning(self.gui_els, "warning", "please insert classes.txt")
-        else:
-            QMessageBox.warning(self.gui_els, "warning", "please select or insert annotation folder")
+            os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(self.sel_anno_dir_path))
+            self.load_exist_annotations()
 
 
     def ClassesTxtFileGenerator(self, exportPath:str):
