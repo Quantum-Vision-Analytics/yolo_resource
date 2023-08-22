@@ -35,6 +35,7 @@ class AutoAnnotatorWindow():
     selected_annotation_fpath = Path
     selected_image_directory = Path
     sel_anno_dir_path = Path
+    target_class = str
     def __init__(self, project_directory, opening_window):
 
 
@@ -53,6 +54,7 @@ class AutoAnnotatorWindow():
         self.selected_image_directory = None
         self.sel_img_fpath = None
         self.sel_anno_dir_path = None
+        self.target_class = None
 
         self.gui_els = QtGuiElements()
         self.connect_gui_elements_to_functions()
@@ -72,6 +74,13 @@ class AutoAnnotatorWindow():
         self.gui_els.verify_button.clicked.connect(self.verify)
 
         self.gui_els.close_project_button.clicked.connect(self.close_project)
+        self.gui_els.comboBox_targetClasses.currentTextChanged.connect(self.change_target_class)
+        self.gui_els.comboBox_architecture.currentTextChanged.connect(self.change_architecture)
+    def change_target_class(self):
+        self.load_exist_annotations()
+
+    def change_architecture(self):
+        self.load_exist_annotations()
 
     def close_project(self):
         self.opening_window.show()
@@ -274,7 +283,7 @@ class AutoAnnotatorWindow():
             image_name = self.sel_imgs[self.current_image_index]
             self.find_annot_file(image_name)
             anno_file = self.selected_annotation_fpath
-            if anno_file is None:
+            if anno_file is not None:
                 anno_file = self.sel_anno_dir_path / "classes.txt"
                 if os.path.isfile(anno_file):
                     os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(anno_file))
