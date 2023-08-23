@@ -42,13 +42,7 @@ class AutoAnnotatorWindow():
         self.opening_window = opening_window
         self.project_directory = Path(project_directory)
         self.project_name = self.project_directory.name
-        self.anno_dir_path = self.project_directory / "annotations"
-        #Identify the path to get from the annotations to the images
-        self.img_dir_path = self.project_directory / "images"
-
-        self.yolo_dir = self.project_directory / "exported" / "labels_yolo"
-        self.voc_dir = self.project_directory / "exported" / "labels_voc"
-        self.coco_dir = self.project_directory / "exported" / "labels_coco"
+        self.init_folder_path()
         self.sel_imgs = [] # to hold img files
         self.sel_anns = [] # to hold ann files
         self.selected_annotation_fpath = None
@@ -56,12 +50,27 @@ class AutoAnnotatorWindow():
         self.sel_img_fpath = None
         self.sel_anno_dir_path = None
         self.target_class = None
-
+        self.bImagesUploaded = False
         self.gui_els = QtGuiElements()
         self.get_default_class_paths()
         self.connect_gui_elements_to_functions()
         self.load_exist_images()
-        self.load_exist_annotations()
+        if self.sel_imgs:
+            self.load_annotations()
+    def init_folder_path(self):
+        self.anno_dir_path = self.project_directory / "annotations"
+        # Identify the path to get from the annotations to the images
+        self.img_dir_path = self.project_directory / "images"
+        self.yolo_dir = self.project_directory / "exported" / "labels_yolo"
+        self.voc_dir = self.project_directory / "exported" / "labels_voc"
+        self.coco_dir = self.project_directory / "exported" / "labels_coco"
+        self.create_folder_if_not_exist()
+    def create_folder_if_not_exist(self):
+        self.anno_dir_path.mkdir(parents=True, exist_ok=True)
+        self.img_dir_path.mkdir(parents=True, exist_ok=True)
+        self.yolo_dir.mkdir(parents=True, exist_ok=True)
+        self.voc_dir.mkdir(parents=True, exist_ok=True)
+        self.coco_dir.mkdir(parents=True, exist_ok=True)
     def get_default_class_paths(self):
         def_class_dir_path = self.project_directory.parent.parent.parent / "classes_for_allmodels"
         classes_files = os.listdir(def_class_dir_path)
@@ -83,15 +92,15 @@ class AutoAnnotatorWindow():
         self.gui_els.comboBox_targetClasses.currentTextChanged.connect(self.change_target_class)
         self.gui_els.comboBox_architecture.currentTextChanged.connect(self.change_architecture)
     def change_target_class(self):
-        self.load_exist_annotations()
+        self.load_annotations()
 
     def change_architecture(self):
-        self.load_exist_annotations()
+        self.load_annotations()
 
     def close_project(self):
         self.opening_window.show()
         self.gui_els.close()
-    def list_images(self,directory):
+    def insert_images_into_gui(self, directory):
         if directory:
             self.gui_els.image_list_widget.clear()
             for filename in os.listdir(directory):
@@ -100,21 +109,40 @@ class AutoAnnotatorWindow():
                     self.gui_els.image_list_widget.addItem(item)
 
     def choose_image(self):
-        directory = QFileDialog.getExistingDirectory(self.gui_els, "Resim Klasörünü Seç","")
-        if not os.listdir(self.img_dir_path):
-            files = os.listdir(directory)
+        directory = QFileDialog.getExistingDirectory(self.gui_els, "Select Image Folder","")
+        files = os.listdir(directory)
+        if files:
             for file in files :
                 shutil.copy2(os.path.join(directory,file), self.img_dir_path)
             self.selected_image_directory = self.img_dir_path
             self.load_images_from_directory(self.img_dir_path)
-            self.list_images(self.img_dir_path)
+            if self.sel_imgs:
+                self.insert_images_into_gui(self.img_dir_path)
+                self.load_annotations()
+
 
     def load_exist_images(self):
         if os.listdir(self.img_dir_path):
             self.selected_image_directory = self.img_dir_path
             self.load_images_from_directory(self.img_dir_path)
-            self.list_images(self.img_dir_path)
+            self.insert_images_into_gui(self.img_dir_path)
+    def load_images_from_directory(self, directory):
+        file_names = []
+        # valid_extensions = ['.jpg', '.jpeg', '.png']
+        self.current_image_index = 0
 
+        for file_name in os.listdir(directory):
+            if check_is_image_file(file_name):
+                file_names.append(os.path.join(directory, file_name))
+
+        if file_names:
+            self.sel_imgs = file_names
+            self.current_image_index = 0
+            self.load_image(file_names[self.current_image_index])
+            self.bImagesUploaded = True
+        else:
+            QMessageBox.information(self.gui_els, 'warning',
+                                    f'please upload images by clicking select image')
     def find_annot_file(self, img_name):
         img_name = Path(img_name)
         name_to_search = img_name.stem
@@ -122,7 +150,7 @@ class AutoAnnotatorWindow():
             if name_to_search in annot:
                 return annot
         return None
-    def load_exist_annotations(self):
+    def load_annotations(self):
         self.find_sel_annot_folder()
         class_txt_path = self.sel_anno_dir_path / 'classes.txt'
         if os.path.exists(class_txt_path):
@@ -137,19 +165,7 @@ class AutoAnnotatorWindow():
             arch = self.create_classses_file_selected_annot_fold()
             QMessageBox.information(self.gui_els, 'warning', f'there is no classes.txt file for {arch} to display label')
 
-    def load_images_from_directory(self, directory):
-        file_names = []
-        # valid_extensions = ['.jpg', '.jpeg', '.png']
-        self.current_image_index = 0
 
-        for file_name in os.listdir(directory):
-            if check_is_image_file(file_name):
-                file_names.append(os.path.join(directory, file_name))
-
-        if file_names:
-            self.sel_imgs = file_names
-            self.current_image_index = 0
-            self.load_image(file_names[self.current_image_index])
     def create_qimage_from_opencv(self, opencv_img):
         scale_percent = 60  # percent of original size
         nchannel = opencv_img.shape[2]
@@ -299,7 +315,7 @@ class AutoAnnotatorWindow():
         if self.execute_auto_annotator(kwargs):
             QMessageBox.information(self.gui_els, 'Info', 'detection is finished.')
 
-        self.load_exist_annotations()
+        self.load_annotations()
         self.display_annotated_image()
 
 
@@ -308,7 +324,7 @@ class AutoAnnotatorWindow():
         if self.sel_anno_dir_path:
             image_name = self.sel_imgs[self.current_image_index]
             os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(self.sel_anno_dir_path))
-            self.load_exist_annotations()
+            self.load_annotations()
 
 
     def ClassesTxtFileGenerator(self, exportPath:str):
