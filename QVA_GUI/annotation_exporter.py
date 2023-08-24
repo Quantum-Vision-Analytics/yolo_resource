@@ -24,6 +24,7 @@ class AnnotationExporter():
         self.coco_dir = self.project_directory / "exported" / "labels_coco"
         self.annot_export_func_dict = {'PascalVoc': self.ExportVocLabels, 'Coco':self.ExportCocoLabels, 'Yolo':self.ExportYoloLabels}
         self.annot_export_dir_dict = {'PascalVoc': self.voc_dir, 'Coco': self.coco_dir, 'Yolo': self.yolo_dir}
+
         self.create_folder_if_not_exist()
     def create_folder_if_not_exist(self):
         self.yolo_dir.mkdir(parents=True, exist_ok=True)
