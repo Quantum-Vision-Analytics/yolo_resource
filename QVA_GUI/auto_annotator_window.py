@@ -3,11 +3,10 @@ import shutil
 import json
 
 
-from pylabel.importer import ImportYoloV5
+
 import warnings
 import torch
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QLayout
+
 from PyQt5.QtGui import QPixmap, QImage
 
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QListWidgetItem, QInputDialog,QSpinBox, QDoubleSpinBox, QComboBox
@@ -24,6 +23,7 @@ from quantum_auto_annot_arguments import Quantum_AA_Arguments
 from utils.general import strip_optimizer
 from qt_gui_elements import QtGuiElements
 from pathlib import Path
+from annotation_exporter import AnnotationExporter
 
 valid_extensions = ["jpeg", "jpg", "png", "jpe", "bmp"]
 def check_is_image_file(file_name):
@@ -37,6 +37,7 @@ class AutoAnnotatorWindow():
     sel_anno_dir_path = Path
     default_classes_files = list
     target_class = str
+    annotation_exporter = AnnotationExporter
     def __init__(self, project_directory, opening_window):
 
         self.opening_window = opening_window
@@ -52,6 +53,7 @@ class AutoAnnotatorWindow():
         self.target_class = None
         self.bImagesUploaded = False
         self.gui_els = QtGuiElements()
+        self.annotation_exporter = AnnotationExporter(self.project_directory, self.gui_els)
         self.get_default_class_paths()
         self.connect_gui_elements_to_functions()
         self.load_exist_images()
@@ -61,16 +63,12 @@ class AutoAnnotatorWindow():
         self.anno_dir_path = self.project_directory / "annotations"
         # Identify the path to get from the annotations to the images
         self.img_dir_path = self.project_directory / "images"
-        self.yolo_dir = self.project_directory / "exported" / "labels_yolo"
-        self.voc_dir = self.project_directory / "exported" / "labels_voc"
-        self.coco_dir = self.project_directory / "exported" / "labels_coco"
+
         self.create_folder_if_not_exist()
     def create_folder_if_not_exist(self):
         self.anno_dir_path.mkdir(parents=True, exist_ok=True)
         self.img_dir_path.mkdir(parents=True, exist_ok=True)
-        self.yolo_dir.mkdir(parents=True, exist_ok=True)
-        self.voc_dir.mkdir(parents=True, exist_ok=True)
-        self.coco_dir.mkdir(parents=True, exist_ok=True)
+
     def get_default_class_paths(self):
         def_class_dir_path = self.project_directory.parent.parent.parent / "classes_for_allmodels"
         classes_files = os.listdir(def_class_dir_path)
@@ -82,8 +80,8 @@ class AutoAnnotatorWindow():
         # self.choose_label_button.clicked.connect(self.choose_label)
         self.gui_els.detect_button.clicked.connect(self.detect)
         # self.choose_model_button.clicked.connect(self.choose_model)
-        self.gui_els.edit_button.clicked.connect(self.edit)
-        self.gui_els.export_button.clicked.connect(self.export)
+        self.gui_els.edit_button.clicked.connect(self.edit_annotation)
+        self.gui_els.export_button.clicked.connect(self.export_annotation_file)
         self.gui_els.next_button.clicked.connect(self.next_image)
         self.gui_els.previous_button.clicked.connect(self.previous_image)
         self.gui_els.verify_button.clicked.connect(self.verify)
@@ -320,73 +318,20 @@ class AutoAnnotatorWindow():
 
 
 
-    def edit(self):
+    def edit_annotation(self):
         if self.sel_anno_dir_path:
             image_name = self.sel_imgs[self.current_image_index]
             os.system("python ..\labelImg\labelImg.py "+ image_name + " " + str(self.sel_anno_dir_path))
             self.load_annotations()
 
 
-    def ClassesTxtFileGenerator(self, exportPath:str):
-
-       with open(self.anno_dir_path, "r") as fr:
-           data = json.loads(fr.read())
-           classes_dict = data['categories']
-
-           with open(exportPath+"\\classes.txt","w") as fw:
-               i = 0
-               x = 0
-               fw.writelines("names:\n")
-
-               while i < classes_dict[-1]['id']:
-                   if i +1 == classes_dict[x]['id']:
-                       fw.writelines(classes_dict[x]['name']+"\n")
-                       x += 1
-                       i += 1
-                   else:
-                       fw.writelines("\n")
-                       i += 1
-           fw.close()
-       fr.close()
-
-    def ExportYoloLabels(self, exportPath:str):
-        if not os.path.isdir(exportPath):
-            os.mkdir(exportPath)
-
-        self.dataset.export.ExportToYoloV5(output_path = exportPath)[0]
-        # self.ClassesTxtFileGenerator(exportPath = exportPath)
 
 
-    def ExportVocLabels(self, exportPath:str):
 
-        if os.path.isdir(exportPath) == False:
-            os.mkdir(exportPath)
 
-        self.dataset.export.ExportToVoc(output_path = exportPath)[0]
+    def export_annotation_file(self):
+        self.annotation_exporter.create_export_file(self.sel_anno_dir_path, self.selected_image_directory)
 
-    def ExportCocoLabels(self, exportPath:str):
-        self.dataset.annot_path = self.coco_dir
-        if os.path.isdir(exportPath) == False:
-            os.mkdir(exportPath)
-
-        self.dataset.export.ExportToCoco(output_path = None, cat_id_index=0)[0]
-        self.dataset.annot_path = self.current_dir / "annotations"
-
-    def export(self):
-        #self.last_detections_path = self.annot_path / os.listdir(self.annot_path)[-1]
-        if self.selected_annotation_fpath is not None:
-            self.dataset = ImportYoloV5(path=self.selected_annotation_fpath, path_to_images=self.img_path, cat_names= self.gui_els.yoloclasses, img_ext="jpg,jpeg,png,webp")
-            exportValue = str(self.gui_els.comboBox_export.currentText())
-            if exportValue == "PascalVoc":
-                self.ExportVocLabels(exportPath = self.voc_dir)
-            elif exportValue == "Coco":
-                self.ExportCocoLabels(exportPath = self.coco_dir)
-            elif exportValue == "Yolo":
-                self.ExportYoloLabels(exportPath = self.yolo_dir)
-            QMessageBox.information(self.gui_els, 'Info', 'Export process in completed')
-        else:
-            message = str(f"{str(self.sel_img_fpath)} file doenst have annotation file")
-            QMessageBox.warning(self.gui_els, "warning", message)
 
     def define_annotation_image(self):
         self.current_file = self.sel_imgs[self.current_image_index]
