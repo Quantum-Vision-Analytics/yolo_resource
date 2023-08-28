@@ -157,7 +157,7 @@ class AutoAnnotatorWindow():
             file_names.remove("classes.txt")
             self.sel_anns = file_names
             self.find_annotation_file()
-            self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
+            self.draw_bounding_boxes(self.curr_img_fpath, self.selected_annotation_fpath)
 
         else:
             arch = self.create_classses_file_selected_annot_fold()
@@ -183,7 +183,7 @@ class AutoAnnotatorWindow():
     def display_annotated_image(self):
         self.define_annotation_image()
         self.find_annotation_file()
-        self.draw_bounding_boxes(self.current_file, self.selected_annotation_fpath)
+        self.draw_bounding_boxes(self.curr_img_fpath, self.selected_annotation_fpath)
     def next_image(self):
         if self.current_image_index + 1 < len(self.sel_imgs):
             self.current_image_index += 1
@@ -334,8 +334,8 @@ class AutoAnnotatorWindow():
 
 
     def define_annotation_image(self):
-        self.current_file = self.sel_imgs[self.current_image_index]
-        self.current_file = self.current_file.replace("/","\\")
+        self.curr_img_fpath = self.sel_imgs[self.current_image_index]
+        self.curr_img_fpath = self.curr_img_fpath.replace("/", "\\")
 
     def verify(self):
         verify_dir = self.project_directory / "verified"
@@ -343,10 +343,10 @@ class AutoAnnotatorWindow():
         dst_dir= os.path.join(current_dir,verify_dir)
         self.define_annotation_image()
         self.find_annotation_file()
-        if self.current_file and self.selected_annotation_fpath:
-            shutil.copy(self.current_file, dst_dir)
+        if self.curr_img_fpath and self.selected_annotation_fpath:
+            shutil.copy(self.curr_img_fpath, dst_dir)
             shutil.copy(self.selected_annotation_fpath, dst_dir)
-            print(self.current_file)
+            print(self.curr_img_fpath)
             print(self.selected_annotation_fpath)
         else:
             warnings.warn("there is no annotations generated. you can only verify images with their annotations")
