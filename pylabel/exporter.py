@@ -637,7 +637,7 @@ class Export:
 
         return output_file_paths
 
-    def ExportToCoco(self, output_path=None, cat_id_index=None):
+    def ExportToCoco(self, output_dir_path=None, cat_id_index=None):
         """
         Writes COCO annotation files to disk (in JSON format) and returns the path to files.
 
@@ -676,10 +676,9 @@ class Export:
         df_outputC = []
         list_i = []
         list_c = []
-        json_list = []
-
+        images = []
         for i in range(0, df.shape[0]):
-            images = [
+            images.append(
                 {
                     "id": df["img_id"][i],
                     "folder": df["img_folder"][i],
@@ -689,7 +688,7 @@ class Export:
                     "height": df["img_height"][i],
                     "depth": df["img_depth"][i],
                 }
-            ]
+            )
 
             # Skip this if cat_id is na
             if not pd.isna(df["cat_id"][i]):
@@ -782,11 +781,15 @@ class Export:
         parsedI.update(parsedC)
         json_output = parsedI
 
-        if output_path == None:
-            output_path = Path(
-                self.dataset.path_to_annotations, (self.dataset.name + ".json")
-            )
+        for img in images:
+            if output_dir_path == None:
+                output_path = Path(
+                    self.dataset.path_to_annotations, (self.dataset.name + ".json")
+                )
+            else:
+                fname = img["file_name"].rsplit(".",1)[0]
+                output_path = output_dir_path / (fname + ".json")
 
-        with open(output_path, "w") as outfile:
-            json.dump(obj=json_output, fp=outfile, indent=4)
+            with open(output_path, "w") as outfile:
+                json.dump(obj=json_output, fp=outfile, indent=4)
         return [str(output_path)]

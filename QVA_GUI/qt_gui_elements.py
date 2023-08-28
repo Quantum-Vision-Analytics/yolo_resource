@@ -64,8 +64,8 @@ class QtGuiElements(QWidget):
         hbox3.addWidget(self.comboBox_imgsize)
         hbox3.addWidget(self.label_threshold)
         hbox3.addWidget(self.threshold_bar)
-        hbox3.addWidget(self.label_thread)
-        hbox3.addWidget(self.spinbox_thread)
+        # hbox3.addWidget(self.label_thread)
+        # hbox3.addWidget(self.spinbox_thread)
         hbox3.addWidget(self.label_batchsize)
         hbox3.addWidget(self.spinbox_batchsize)
         hbox3.addWidget(self.label_targetClasses)
@@ -115,9 +115,9 @@ class QtGuiElements(QWidget):
         self.spinbox_batchsize.setValue(500)
         self.spinbox_batchsize.setMaximum(5000)
 
-        self.label_thread = QLabel('Thread: ')
-        self.spinbox_thread = QSpinBox()
-        self.spinbox_thread.setValue(1)
+        # self.label_thread = QLabel('Thread: ')
+        # self.spinbox_thread = QSpinBox()
+        # self.spinbox_thread.setValue(1)
 
         self.label_threshold = QLabel('Conf-Threshold: ')
         self.threshold_bar = QDoubleSpinBox()
@@ -133,7 +133,7 @@ class QtGuiElements(QWidget):
 
         self.label_architecture = QLabel('Architecture: ')
         self.comboBox_architecture = QComboBox()
-        self.comboBox_architecture.addItems(["Yolo", "fasterrcnn", "retinanet", "fcos", "ssd300", "ResNet", "Centernet"])
+        self.comboBox_architecture.addItems(["Yolo", "fasterrcnn", "retinanet", "fcos", "ssd300"])
 
         self.label_targetClasses = QLabel('Target Class: ')
         self.comboBox_targetClasses = QComboBox()
@@ -162,7 +162,7 @@ class QtGuiElements(QWidget):
         self.next_button.setGeometry(120, 460, 90, 30)
         self.previous_button = QPushButton('Previous', self)
         self.previous_button.setGeometry(10, 460, 90, 30)
-        self.close_project_button = QPushButton('Projeyi kapat')
+        self.close_project_button = QPushButton('Close Project')
 
         icon = QIcon('logo.png')
         self.setWindowIcon(icon)
