@@ -25,8 +25,8 @@ class Auto_Annotator:
         print("Innit done")
 
     # Process, predict and save predictions systematically
-    def Process(self):
-        self.mih.Detect()
+    def RunModel(self):
+        self.mih.StartDetection()
 
         if(not self.opt.no_verify):
             self.annotVer.annot_verifier(self.opt.source, str(self.mih.save_dir))
@@ -54,13 +54,13 @@ def Parsing():
     parser.add_argument('--project', default='detections', help='save results to project/name')
     parser.add_argument('--name', default='result', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--no-trace', action='store_true', default=True, help='don`t trace model')
     parser.add_argument('--multi-label', action='store_true', help='label with multiple classes')
     parser.add_argument('--no-verify', action='store_true', help='don`t verify images')
     parser.add_argument('--half-precision', action='store_true', help='use half precision')
     parser.add_argument('--show-details', action='store_true', help='show detection details')
     parser.add_argument('--batch-size', type=int, default=20, help='number of the images to work on per thread')
-    parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
+    # parser.add_argument('--thread-count', type=int, default=2, help='number of the threads to work with')
     parser.add_argument('--architecture', type=str, default='yolov7', help='architecture used')
     return parser#.parse_args()
     #check_requirements(exclude=('pycocotools', 'thop'))
@@ -70,9 +70,10 @@ if __name__ == "__main__":
     opt = Parsing()
     aa = Auto_Annotator(opt)
     with torch.no_grad():
+        # Check if new pre-trained models released
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['yolov7.pt']:
-                aa.Process()
+                aa.RunModel()
                 strip_optimizer(opt.weights)
         else:
-            aa.Process()
+            aa.RunModel()

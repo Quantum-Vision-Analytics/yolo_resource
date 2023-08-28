@@ -1,6 +1,5 @@
 import time
 import torch
-from utils.torch_utils import time_synchronized
 from FileGenerator import FileGenerator
 import threading
 import abc
@@ -61,5 +60,5 @@ class ModelInferenceHandler(abc.ABC):
 
     # Start the whole process and manage the reading images, batches, batch_queue insertion parts
     @abc.abstractmethod
-    def Detect(self):
+    def StartDetection(self):
         pass

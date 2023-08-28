@@ -1,15 +1,11 @@
 from torchvision.io.image import read_image
-from torchvision.utils import draw_bounding_boxes
-from torchvision.transforms.functional import to_pil_image
 import argparse
-import time
 from pathlib import Path
 from os.path import splitext
-from FileGenerator import FileGenerator
-import threading
 import os
 import glob
 from utils.general import increment_path
+from utils.torch_utils import time_synchronized
 from ModelInferenceHandler import ModelInferenceHandler
 from torchvision.models.detection import(
             fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights,
@@ -26,7 +22,7 @@ class Pytorch_Models(ModelInferenceHandler):
     def LoadResources(self):
         self.source, self.view_img, self.save_txt = self.opt.source, self.opt.view_img, self.opt.save_txt
         self.save_img = not self.opt.nosave and not self.source.endswith('.txt')  # save inference images
-
+        
         # Define a dictionary mapping model names to their functions and weights
         models_info = {
             "fasterrcnn": (fasterrcnn_resnet50_fpn_v2, FasterRCNN_ResNet50_FPN_V2_Weights.DEFAULT),
@@ -49,6 +45,16 @@ class Pytorch_Models(ModelInferenceHandler):
         # Initialize the inference transforms
         self.preprocess = self.weights.transforms()
 
+        # Filter classes by given class names as input
+        if(self.opt.classes is not None):
+            inputClasses = self.opt.classes
+            self.filterClasses = []
+            for i, cls in enumerate(self.weights.meta["categories"]):
+                if cls in inputClasses:
+                    self.filterClasses.append(i)
+        else:
+            self.filterClasses = None
+
     def Preprocess(self, batch:list):
         # Dimensions of the image, [width,height]
         dim_list = [[len(im[0][0]), len(im[0])] for im in batch]
@@ -59,21 +65,27 @@ class Pytorch_Models(ModelInferenceHandler):
         return [self.model([im])[0] for im in batch]
 
     def Postprocess(self, batch:list, dimensions:list, img_names:list):
+        # Iterate per image in the batch
         for prediction, img_dims, img_name in zip(batch, dimensions, img_names):
-            ##TODO Add class name filtering
+            # Iterate for the images
             with open(self.output_path + os.path.basename(splitext(img_name)[0]) + ".txt", "w") as f:
+                # Iterate all the detections of an image
                 for label, bb in zip(list(prediction["labels"]), list(prediction["boxes"])):
-                    org_bb = bb.detach().cpu().numpy()
-                    output = "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label.item(), (org_bb[0] + org_bb[2])/2/img_dims[0], (org_bb[1] + org_bb[3])/2/img_dims[1], abs(org_bb[2] - org_bb[0])/img_dims[0], abs(org_bb[3] - org_bb[1])/img_dims[1])
-                    #print(f"{label.item()} {org_bb[0]} {org_bb[1]} {org_bb[2]} {org_bb[3]}")
-                    f.write(output)
+                    # Filter labels
+                    if self.filterClasses is None or label.item() in self.filterClasses:
+                        org_bb = bb.detach().cpu().numpy()
+                        output = "{} {:.5f} {:.5f} {:.5f} {:.5f}\n".format(label.item(), (org_bb[0] + org_bb[2])/2/img_dims[0], (org_bb[1] + org_bb[3])/2/img_dims[1], abs(org_bb[2] - org_bb[0])/img_dims[0], abs(org_bb[3] - org_bb[1])/img_dims[1])
+                        f.write(output)
+
 
         with open(self.output_path + "classes.txt", "w") as f:
             for x in self.weights.meta["categories"]:
                 f.write(x + "\n")
 
-    def Detect(self):
+    def StartDetection(self):
+        t0 = time_synchronized()
         self.LoadResources()
+        t1 = time_synchronized()
 
         # Supported image types
         img_formats = ['jpg', 'jpeg', 'png']
@@ -111,7 +123,10 @@ class Pytorch_Models(ModelInferenceHandler):
         dims, batch = self.Preprocess(batch)
         batch = self.Predict(batch)
         self.Postprocess(batch, dims, image_names)
-            
+        
+        t2 = time_synchronized()
+        print(f"Loading model: {round(t1-t0,3)} seconds\nInference: {round(t2-t1,3)} seconds\nTotal time: {round(t2-t0,3)} seconds")
+
         
     def Train(self):
         pass

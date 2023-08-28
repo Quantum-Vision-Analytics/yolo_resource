@@ -1,5 +1,4 @@
 import argparse
-import time
 from pathlib import Path
 
 import cv2
@@ -13,8 +12,6 @@ from utils.general import check_img_size, check_imshow, non_max_suppression, app
     scale_coords, xyxy2xywh, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
-
-from FileGenerator import FileGenerator
 from ModelInferenceHandler import ModelInferenceHandler
 
 class YOLOv7(ModelInferenceHandler):
@@ -87,119 +84,137 @@ class YOLOv7(ModelInferenceHandler):
             self.filterClasses = None
 
     # Preprocessing images beforehand
-    def Preprocess(self, image_data:list):
-        path, img, im0s, vid_cap = image_data
-        img = torch.from_numpy(img).to(self.device)
-        img = img.half() if self.half else img.float()  # uint8 to fp16/32
-        img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        if img.ndimension() == 3:
-            img = img.unsqueeze(0)
-        return (path, img, im0s, vid_cap)
+    def Preprocess(self, batch:list):
+        for index, image_data in enumerate(batch):
+            path, img, im0s, vid_cap = image_data
+            img = torch.from_numpy(img).to(self.device)
+            img = img.half() if self.half else img.float()  # uint8 to fp16/32
+            img /= 255.0  # 0 - 255 to 0.0 - 1.0
+            if img.ndimension() == 3:
+                img = img.unsqueeze(0)
+            batch[index] = (path, img, im0s, vid_cap)
+        return batch
+
 
     # Object detection and classification
-    def Predict(self, img_data:tuple):
-        path, img, im0s, vid_cap = img_data
-        timelap = [0] * 3
+    def Predict(self, batch:list):
+        for index, image_data in enumerate(batch):
+            path, img, im0s, vid_cap = image_data
+            timelap = [0] * 3
 
-        # Warmup
-        if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
-            self.old_img_b = img.shape[0]
-            self.old_img_h = img.shape[2]
-            self.old_img_w = img.shape[3]
-            for i in range(3):
-                self.model(img, augment=self.opt.augment)[0]
+            # Warmup
+            if self.device.type != 'cpu' and (self.old_img_b != img.shape[0] or self.old_img_h != img.shape[2] or self.old_img_w != img.shape[3]):
+                self.old_img_b = img.shape[0]
+                self.old_img_h = img.shape[2]
+                self.old_img_w = img.shape[3]
+                for i in range(3):
+                    self.model(img, augment=self.opt.augment)[0]
 
-        # Inference
-        timelap[0] = time_synchronized()
+            # Inference
+            timelap[0] = time_synchronized()
 
-        with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
-            pred = self.model(img, augment=self.opt.augment)[0]
-        timelap[1] = time_synchronized()
+            with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
+                pred = self.model(img, augment=self.opt.augment)[0]
+            timelap[1] = time_synchronized()
 
-        # Apply NMS
-        pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.filterClasses, agnostic=self.opt.agnostic_nms, multi_label=self.opt.multi_label)
-        timelap[2] = time_synchronized()
+            # Apply NMS
+            pred = non_max_suppression(pred, self.opt.conf_thres, self.opt.iou_thres, classes=self.filterClasses, agnostic=self.opt.agnostic_nms, multi_label=self.opt.multi_label)
+            timelap[2] = time_synchronized()
 
-        # Apply Classifier
-        if self.classify:
-            pred = apply_classifier(pred, self.modelc, img, im0s)
-        
-        return (path, img, im0s, vid_cap, pred, timelap)
+            # Apply Classifier
+            if self.classify:
+                pred = apply_classifier(pred, self.modelc, img, im0s)
+            
+            batch[index] = (path, img, im0s, vid_cap, pred, timelap)
+        return batch
 
     # Process results and save the labels
-    def Postprocess(self, img_data:tuple):
-        # Will store all the detections for annotation verifier
-        path, img, im0s, vid_cap, pred, timelap = img_data
+    def Postprocess(self, batch:list):
+        for image_data in batch:
+            # Will store all the detections for annotation verifier
+            path, img, im0s, vid_cap, pred, timelap = image_data
 
-        for i, det in enumerate(pred):  # detections per image
-            if self.webcam:  # batch_size >= 1
-                p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
-            else:
-                p, s, im0, frame = path, '', im0s, getattr(self.dataset, 'frame', 0)
+            for i, det in enumerate(pred):  # detections per image
+                if self.webcam:  # batch_size >= 1
+                    p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), self.dataset.count
+                else:
+                    p, s, im0, frame = path, '', im0s, getattr(self.dataset, 'frame', 0)
 
-            p = Path(p)  # to Path
-            save_path = str(self.save_dir / p.name)  # img.jpg
-            # txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
-            txt_path = str(self.save_dir / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
-            gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            if len(det):
-                # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
-                # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
-                    s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                p = Path(p)  # to Path
+                save_path = str(self.save_dir / p.name)  # img.jpg
+                # txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
+                txt_path = str(self.save_dir / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')  # img.txt
+                gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+                if len(det):
+                    # Rescale boxes from img_size to im0 size
+                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                    # Print results
+                    for c in det[:, -1].unique():
+                        n = (det[:, -1] == c).sum()  # detections per class
+                        s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                # Write results
-                for *xyxy, conf, cls in reversed(det):
-                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
-                    #detections.append(('%g ' * len(line)).rstrip() % line)
-                    if self.save_txt:  # Write to file
-                        self.fileGen.Generate_Annotation(txt_path, line)
-                                                    
-                    if self.save_img or self.view_img:  # Add bbox to image
-                        label = f'{self.names[int(cls)]} {conf:.2f}'
-                        plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
+                    # Write results
+                    for *xyxy, conf, cls in reversed(det):
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (cls, *xywh, conf) if self.opt.save_conf else (cls, *xywh)  # label format
+                        #detections.append(('%g ' * len(line)).rstrip() % line)
+                        if self.save_txt:  # Write to file
+                            self.fileGen.Generate_Annotation(txt_path, line)
+                                                        
+                        if self.save_img or self.view_img:  # Add bbox to image
+                            label = f'{self.names[int(cls)]} {conf:.2f}'
+                            plot_one_box(xyxy, im0, label=label, color=self.colors[int(cls)], line_thickness=1)
 
-            # Print time (inference + NMS)
-            if self.opt.show_details:
-                print(f'{s}Done. ({(1E3 * (timelap[1] - timelap[0])):.1f}ms) Inference, ({(1E3 * (timelap[2] - timelap[1])):.1f}ms) NMS')
+                # Print time (inference + NMS)
+                if self.opt.show_details:
+                    print(f'{s}Done. ({(1E3 * (timelap[1] - timelap[0])):.1f}ms) Inference, ({(1E3 * (timelap[2] - timelap[1])):.1f}ms) NMS')
 
-            # Stream results
-            if self.view_img:
-                cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+                # Stream results
+                if self.view_img:
+                    cv2.imshow(str(p), im0)
+                    cv2.waitKey(1)  # 1 millisecond
 
-            # Save results (image with detections)
-            if self.save_img:
-                if self.dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                else:  # 'video' or 'stream'
-                    if self.vid_path != save_path:  # new video
-                        self.vid_path = save_path
-                        if isinstance(self.vid_writer, cv2.VideoWriter):
-                            self.vid_writer.release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                            save_path += '.mp4'
-                        self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    self.vid_writer.write(im0)
+                # Save results (image with detections)
+                if self.save_img:
+                    if self.dataset.mode == 'image':
+                        cv2.imwrite(save_path, im0)
+                    else:  # 'video' or 'stream'
+                        if self.vid_path != save_path:  # new video
+                            self.vid_path = save_path
+                            if isinstance(self.vid_writer, cv2.VideoWriter):
+                                self.vid_writer.release()  # release previous video writer
+                            if vid_cap:  # video
+                                fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                                w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                                h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            else:  # stream
+                                fps, w, h = 30, im0.shape[1], im0.shape[0]
+                                save_path += '.mp4'
+                            self.vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                        self.vid_writer.write(im0)
 
-    def Detect(self):
+    def StartDetection(self):
         # Prepare for detection
         t0 = time_synchronized()
         self.LoadResources()
         t1 = time_synchronized()
 
-        for img_data in self.dataset:
-            img_data = self.Preprocess(img_data)
-            img_data = self.Predict(img_data)
-            self.Postprocess(img_data)
+        batch = []
+        batch_size = self.opt.batch_size
+        for image_data in self.dataset:
+            if len(batch) < batch_size:
+                batch.append(image_data)
+
+            else:
+                batch = self.Preprocess(batch)
+                batch = self.Predict(batch)
+                self.Postprocess(batch)
+                batch = []
+        
+        if len(batch):
+            batch = self.Preprocess(batch)
+            batch = self.Predict(batch)
+            self.Postprocess(batch)
 
         # Output timers
         t2 = time_synchronized()
