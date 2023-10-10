@@ -1,6 +1,6 @@
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: ../datasets/tennis0/train
+val: ../datasets/tennis0/valid
+test: ../datasets/tennis0/test
 
 nc: 1
 names: ['player']

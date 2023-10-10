@@ -208,10 +208,10 @@ class MainWindow():
         with torch.no_grad():
             if opt_cmd.update:  # update all models (to fix SourceChangeWarning)
                 for opt_cmd.weights in ['yolov7.pt']:
-                    aa.Process()
+                    aa.RunModel()
                     strip_optimizer(opt_cmd.weights)
             else:
-                aa.Process()
+                aa.RunModel()
     def detect(self):
 
         directory = self.selected_image_directory
